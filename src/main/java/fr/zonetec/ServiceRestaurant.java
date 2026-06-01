@@ -4,8 +4,6 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface ServiceRestaurant extends Remote {
-    String inscrireServiceCentral(String urlCentralService) throws RemoteException;
-
     String recupererCoordonneesRestaurantsNancy() throws RemoteException;
 
     String reserverTable(
