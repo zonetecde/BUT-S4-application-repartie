@@ -2,13 +2,14 @@ package fr.zonetec;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.Serializable;
 
 /**
  * Classe de réponse qui va permettre d'avoir un même format pour toutes les réponses.
  * Ça permet qu'après quand on appelera les méthodes du service RMI on puisse toujours
  * faire le même traitement de la réponse (ex: vérifier si c'est une erreur ou pas, etc).
  */
-public class Reponse {
+public class Reponse implements Serializable {
     private boolean success;
     private String message;
     private Object data;
