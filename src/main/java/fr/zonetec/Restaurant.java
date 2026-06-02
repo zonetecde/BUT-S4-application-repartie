@@ -17,8 +17,8 @@ public class Restaurant implements ServiceRestaurant {
             ResultSet rs = st.executeQuery();
             while (rs.next()) {
                Double[] coupleCord = new Double[2];
-               coupleCord[0] = rs.getDouble("coordonnesX");
-               coupleCord[1] = rs.getDouble("coordonnesY");
+               coupleCord[0] = rs.getDouble("coordonneesX");
+               coupleCord[1] = rs.getDouble("coordonneesY");
                tabCord.add(coupleCord);
             }
             return new Reponse(true, "La liste a été transmise", tabCord) ;
@@ -46,7 +46,7 @@ public class Restaurant implements ServiceRestaurant {
             String telephone) {
         try {
             Connection conn = ConnectionBuilder.createConnection();
-            PreparedStatement st = conn.prepareStatement("SELECT * FROM Restaurant WHERE ? = nom");
+            PreparedStatement st = conn.prepareStatement("SELECT * FROM Restaurant WHERE nom = ?");
             st.setString(1, nomRestaurant);
             ResultSet rs = st.executeQuery();
             if (rs.next()) {
