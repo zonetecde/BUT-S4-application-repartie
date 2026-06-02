@@ -25,6 +25,7 @@ public class InitDataBase {
             "CREATE TABLE Table_Resto (" +
             " idTable NUMBER(3) GENERATED AS IDENTITY," +
             " idRestaurant NUMBER(3)," + 
+            " reservee NUMBER(1) DEFAULT 0," +
             " nbPlaces NUMBER(2)," +
             " CONSTRAINT pk_table PRIMARY KEY (idTable)," +
             " CONSTRAINT fk_table_restaurant FOREIGN KEY (idRestaurant) REFERENCES Restaurant(idRestaurant)" +
