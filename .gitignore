@@ -1,5 +1,6 @@
 # Maven
-/target/
+/target/*
+!/target/restaurant-rmi-server.jar
 
 # IntelliJ
 .idea/
@@ -13,3 +14,4 @@
 
 # Local binaries
 *.jar
+!/target/restaurant-rmi-server.jar
