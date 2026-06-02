@@ -23,7 +23,7 @@ N'oubliez pas de lancer `rmiregistry` avant.
 
 #### Sur les machines de l'IUT :
 
-On a remarqué que maven n'était pas disponible sur les machines de l'IUT. Il faut donc compiler le projet sur une machine où maven est installé (via `mvn package`), puis copier le fichier `target/restaurant-rmi-server.jar` sur les machines de l'IUT pour pouvoir lancer le service avec la commande suivante :
+On a remarqué que maven n'était pas disponible sur les machines de l'IUT. Il faut donc compiler le projet sur une machine où maven est installé (via `mvn clean package`), puis copier le fichier `target/restaurant-rmi-server.jar` sur les machines de l'IUT pour pouvoir lancer le service avec la commande suivante :
 
 ```
 cd /target
