@@ -18,7 +18,8 @@ public class App {
         try {
             System.out.println("Connexion à la base de données");
             Connection connection = ConnectionBuilder.createConnection();
-            InitDataBase.createTables(connection);
+            InitDataBase.creerTables(connection);
+            InitDataBase.creerEntreesRestaurant(connection);
         } catch (SQLException e) {
             System.err.println("Erreur, impossible de se connecter ou d'initialiser la base de données");
             return;

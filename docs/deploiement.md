@@ -9,6 +9,8 @@ Il faut renseigner les paramètres de connexion à la base de données dans le f
 
 ### Compilation et lancement du service :
 
+#### Sur une machine avec maven d'installé :
+
 Depuis la racine du projet, exécuter les commandes suivantes :
 
 ```
@@ -18,3 +20,14 @@ java -cp "target\classes;$(Get-Content target\classpath.txt)" fr.zonetec.App
 ```
 
 N'oubliez pas de lancer `rmiregistry` avant.
+
+#### Sur les machines de l'IUT :
+
+On a remarqué que maven n'était pas disponible sur les machines de l'IUT. Il faut donc compiler le projet sur une machine où maven est installé (via `mvn package`), puis copier le fichier `target/restaurant-rmi-server.jar` sur les machines de l'IUT pour pouvoir lancer le service avec la commande suivante :
+
+```
+cd /target
+export CLASSPATH=restaurant-rmi-server.jar
+rmiregistry 1099 &
+java -jar restaurant-rmi-server.jar
+```
