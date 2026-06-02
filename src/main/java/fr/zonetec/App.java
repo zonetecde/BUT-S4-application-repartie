@@ -20,7 +20,8 @@ public class App {
             Connection connection = ConnectionBuilder.createConnection();
             InitDataBase.createTables(connection);
         } catch (SQLException e) {
-            System.err.println("Erreur, impossible de se connection ou d'initialiser la base de données");
+            System.err.println("Erreur, impossible de se connecter ou d'initialiser la base de données");
+            return;
         }
         
         // Service RMI
