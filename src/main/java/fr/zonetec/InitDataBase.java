@@ -6,7 +6,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class InitDataBase {
-
+    /**
+     * Créer les tables nécessaires à l'application
+     * @param connection
+     */
     public static void creerTables(Connection connection) {
         String restaurantTable =
             "CREATE TABLE Restaurant (" +
@@ -59,7 +62,10 @@ public class InitDataBase {
         }
     }
 
-
+    /**
+     * Ajout des entrées de test dans la table Restaurant si elle est vide.
+     * @param connection connexion JDBC à la base de données
+     */
     public static void creerEntreesRestaurant(Connection connection) {
         String nbInsertion = "SELECT COUNT(*) FROM Restaurant";
         try (Statement stmt = connection.createStatement();

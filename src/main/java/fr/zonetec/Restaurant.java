@@ -8,11 +8,14 @@ public class Restaurant implements ServiceRestaurant {
      * Récupère les coordonnées de tous les restaurants de Nancy enregistrés en base.
      *
      * @return réponse JSON
-     */
+     */ 
     public Reponse recupererCoordonneesRestaurantsNancy() {
         try {
-            ArrayList<Double[]> tabCord = new ArrayList<>();
             Connection conn = ConnectionBuilder.createConnection();
+
+            // On stock les coordonnées dans un tableau de tableaux de doubles (un tableau pour chaque restaurant, avec les coordonnées X et Y)
+            ArrayList<Double[]> tabCord = new ArrayList<>();
+
             PreparedStatement st = conn.prepareStatement("SELECT * FROM Restaurant");
             ResultSet rs = st.executeQuery();
             while (rs.next()) {
@@ -46,20 +49,22 @@ public class Restaurant implements ServiceRestaurant {
             String telephone) {
         try {
             Connection conn = ConnectionBuilder.createConnection();
+
             PreparedStatement st = conn.prepareStatement("SELECT * FROM Restaurant WHERE ? = nom");
             st.setString(1, nomRestaurant);
             ResultSet rs = st.executeQuery();
+
             if (rs.next()) {
-                int idRes = rs.getInt(0);
+                int idRes = rs.getInt("idRestaurant");
                 st = conn.prepareStatement("INSERT INTO Reservation (idRestaurant, nomClient, prenomClient, nbConvives, numTel) VALUES (?,?,?,?,?)");
-                st.setInt(1,idRes);
+                st.setInt(1, idRes);
                 st.setString(2, nom);
                 st.setString(3, prenom);
-                st.setInt(4,nombreConvives);
+                st.setInt(4, nombreConvives);
                 st.setString(5, telephone);
-                rs = st.executeQuery();
-                if (rs.next()) {
-                    return new Reponse(true, "La réservation a été ajouté", true) ;
+                int rowsAffected = st.executeUpdate();
+                if (rowsAffected > 0) {
+                    return new Reponse(true, "La réservation a été ajoutée", true);
                 }
             }
             return new Reponse(false, "Le Restaurant n'existe pas", null);
