@@ -4,6 +4,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 public class App {
     /**
@@ -13,6 +15,15 @@ public class App {
      * @throws RemoteException si une erreur de communication RMI se produit
      */
     public static void main(String[] args) throws RemoteException {
+        try {
+            System.out.println("Connexion à la base de données");
+            Connection connection = ConnectionBuilder.createConnection();
+            InitDataBase.createTables(connection);
+        } catch (SQLException e) {
+            System.err.println("Erreur, impossible de se connection ou d'initialiser la base de données");
+        }
+        
+        // Service RMI
         Restaurant lc = new Restaurant();
 
         try {
