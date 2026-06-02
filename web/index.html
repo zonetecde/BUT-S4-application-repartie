@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>SAE BUT S4 - Application Répartie</title>
+
+        <!-- Importation de leaflet (https://leafletjs.com/examples/quick-start/) -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+        <!-- Notre script JS -->
+        <script type="module" src="app.mjs"></script>
+    </head>
+    <body>
+        <p>Carte des stations velibs de Nancy :</p>
+
+        <!-- Div dans lequel la carte sera affichée -->
+        <div id="map"></div>
+    </body>
+
+    <style>
+        #map {
+            height: 380px;
+        }
+    </style>
+</html>

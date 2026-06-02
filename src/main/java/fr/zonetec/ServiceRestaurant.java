@@ -2,11 +2,12 @@ package fr.zonetec;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 
 public interface ServiceRestaurant extends Remote {
-    String recupererCoordonneesRestaurantsNancy() throws RemoteException;
+    Reponse recupererCoordonneesRestaurantsNancy() throws RemoteException;
 
-    String reserverTable(
+    Reponse reserverTable(
             String nomRestaurant,
             String nom,
             String prenom,
