@@ -1,25 +1,23 @@
 package fr.zonetec;
 
-import java.sql.Statement;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class InitDataBase {
-    
     public static void createTables(Connection connection) {
-
-        String restaurantTable = 
-            "CREATE TABLE IF NOT EXISTS Restaurant (" +
+        String restaurantTable =
+            "CREATE TABLE Restaurant (" +
             " idRestaurant NUMBER(3)," +
             " nom VARCHAR2(100) NOT NULL," +
             " adresse VARCHAR2(200)," +
             " coordonneesX NUMBER(9,6)," +
-            " coordonneesY NUMBER(9,6),"  +
+            " coordonneesY NUMBER(9,6)," +
             " CONSTRAINT pk_restaurant PRIMARY KEY (idRestaurant)" +
             ")";
 
-        String reservationTable = 
-            "CREATE TABLE IF NOT EXISTS Reservation (" +
+        String reservationTable =
+            "CREATE TABLE Reservation (" +
             "  idRestaurant NUMBER(3)," +
             "  idReservation NUMBER(3)," +
             "  nomClient VARCHAR2(50) NOT NULL," +
@@ -31,15 +29,32 @@ public class InitDataBase {
             ")";
 
         try (Statement stmt = connection.createStatement()) {
-            stmt.execute(restaurantTable);
-            System.out.println("Table Restaurant crée");
+            try {
+                stmt.execute(restaurantTable);
+                System.out.println("Table Restaurant créée");
+            } catch (SQLException e) {
+                    // Si on a une exception c'est très certainement car la table a déjà été créée.
+                if (e.getErrorCode() == 955) {
+                    System.out.println("Table Restaurant déjà existante");
+                } else {
+                    throw e;
+                }
+            }
 
-            stmt.execute(reservationTable);
-            System.out.println("Table Réservation crée");
+            try {
+                stmt.execute(reservationTable);
+                System.out.println("Table Reservation créée");
+            } catch (SQLException e) {
+                if (e.getErrorCode() == 955) {
+                    // Si on a une exception c'est très certainement car la table a déjà été créée.
+                    System.out.println("Table Reservation déjà existante");
+                } else {
+                    throw e;
+                }
+            }
         } catch (SQLException e) {
             System.err.println("Erreur lors de la création des tables : " + e.getMessage());
         }
-
     }
 
 }
