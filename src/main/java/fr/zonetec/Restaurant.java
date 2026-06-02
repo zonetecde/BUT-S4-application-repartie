@@ -21,11 +21,11 @@ public class Restaurant implements ServiceRestaurant {
                coupleCord[1] = rs.getDouble("coordonnesY");
                tabCord.add(coupleCord);
             }
-            return new Reponse(true, "", tabCord) ;
+            return new Reponse(true, "La liste a été transmise", tabCord) ;
         } catch (SQLException e) {
             System.out.println("Erreur lors de la connexion à la BD");
         }
-        return new Reponse(false, "", false);
+        return new Reponse(false, "Erreur lors de la connexion à la BD", null);
     }
 
     /**
@@ -59,15 +59,15 @@ public class Restaurant implements ServiceRestaurant {
                 st.setString(5, telephone);
                 rs = st.executeQuery();
                 if (rs.next()) {
-                    return new Reponse(true, "", true) ;
+                    return new Reponse(true, "La réservation a été ajouté", true) ;
                 }
             }
-            return new Reponse(true, "Le Restaurant n'existe pas", false);
+            return new Reponse(false, "Le Restaurant n'existe pas", null);
 
         } catch (SQLException e) {
         System.out.println("Erreur lors de la connexion à la BD");
         }
-        return new Reponse(false, "Problème", false);
+        return new Reponse(false, "Erreur lors de la connexion à la BD", null);
     }
 
     public Restaurant() {
