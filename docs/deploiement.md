@@ -1,33 +1,66 @@
-### Prérequis :
+# Déploiement
+
+## Prérequis
 
 -   Java version 17
--   Maven
+-   Maven sur la machine utilisée pour compiler
 -   accès au réseau de l'IUT
--   accès à la base de données
+-   accès à la base de données Oracle
 
-Il faut renseigner les paramètres de connexion à la base de données dans le fichier `.env` à la racine du projet. Un exemple de contenu du fichier `.env` est donné dans le fichier `.env.example`.
+Il faut renseigner les paramètres de connexion à la base de données dans un fichier `.env`. Un exemple de contenu est donné dans le fichier `.env.example`.
 
-### Compilation et lancement du service :
+## Compilation du serveur
 
-#### Sur une machine avec maven d'installé :
+Depuis une machine avec Maven installé, exécuter depuis la racine du projet :
 
-Depuis la racine du projet, exécuter les commandes suivantes :
-
-```
-mvn clean compile
-mvn dependency:build-classpath '-Dmdep.outputFile=target\classpath.txt'
-java -cp "target\classes;$(Get-Content target\classpath.txt)" fr.zonetec.App
+```bash
+mvn clean package
 ```
 
-N'oubliez pas de lancer `rmiregistry` avant.
+Le fichier généré est :
 
-#### Sur les machines de l'IUT :
-
-On a remarqué que maven n'était pas disponible sur les machines de l'IUT. Il faut donc compiler le projet sur une machine où maven est installé (via `mvn clean package`), puis copier le fichier `target/restaurant-rmi-server.jar` sur les machines de l'IUT pour pouvoir lancer le service avec la commande suivante :
-
+```text
+target/restaurant-rmi-server.jar
 ```
-cd /target
+
+## Lancement du serveur sur une machine de l'IUT
+
+Comme Maven n'est pas disponible sur la machine de l'IUT, il faut copier au minimum ces fichiers sur la machine :
+
+```text
+restaurant-rmi-server.jar
+.env
+```
+
+Les deux fichiers doivent être dans le même dossier. Depuis ce dossier, lancer :
+
+```bash
 export CLASSPATH=restaurant-rmi-server.jar
 rmiregistry 1099 &
 java -jar restaurant-rmi-server.jar
 ```
+
+Si le projet complet est présent sur la machine de l'IUT, il est aussi possible de lancer depuis la racine du projet :
+
+```bash
+cd target
+export CLASSPATH=restaurant-rmi-server.jar
+rmiregistry 1099 &
+java -jar restaurant-rmi-server.jar
+```
+
+## Lancement du client de test
+
+Depuis la racine du projet, lancer :
+
+```bash
+javac -cp "target/restaurant-rmi-server.jar" -d target/client client/RestaurantClient.java && java -cp "target/client:target/restaurant-rmi-server.jar" RestaurantClient localhost 1099
+```
+
+`localhost` fonctionne uniquement si le client est lancé sur la même machine que le serveur. Si le serveur est sur une autre machine, remplacer `localhost` par l'adresse IP du serveur :
+
+```bash
+javac -cp "target/restaurant-rmi-server.jar" -d target/client client/RestaurantClient.java && java -cp "target/client:target/restaurant-rmi-server.jar" RestaurantClient IP_DU_SERVEUR 1099
+```
+
+On devrait voir apparaître les réponses JSON des différentes requêtes faites au service RMI.
