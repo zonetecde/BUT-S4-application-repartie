@@ -1,5 +1,8 @@
 package fr.zonetec;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * Classe de réponse qui va permettre d'avoir un même format pour toutes les réponses.
  * Ça permet qu'après quand on appelera les méthodes du service RMI on puisse toujours
@@ -29,6 +32,13 @@ public class Reponse {
     }
 
     public String toJson(){
-        return "";
+        ObjectMapper mapper = new ObjectMapper();
+        String json = null;
+        try {
+            json = mapper.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        return json ;
     }
 }
