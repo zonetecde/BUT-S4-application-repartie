@@ -24,7 +24,7 @@ public class RestaurantClient {
         Reponse coordonnees = service.recupererCoordonneesRestaurantsNancy();
         System.out.println(coordonnees.toJson());
 
-        Reponse reservation = service.reserverTable("Grand Café Foy", "Dupont", "Jean", 4, "0600000000");
+        Reponse reservation = service.reserverTable("Grand Café Foy", 1, "2026-06-03 14:00:00", "Dupont", "Jean", 4, "0600000000");
         System.out.println(reservation.toJson());
 
         // Récupère le deuxième service pour fetch une API nécessitant le proxy de l'IUT

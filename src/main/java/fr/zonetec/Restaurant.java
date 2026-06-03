@@ -17,18 +17,21 @@ public class Restaurant implements ServiceRestaurant {
         try {
             Connection conn = ConnectionBuilder.createConnection();
 
-            // On stock les coordonnées dans un tableau de tableaux de doubles (un tableau pour chaque restaurant, avec les coordonnées X et Y)
-            ArrayList<Double[]> tabCord = new ArrayList<>();
+            // On stock les restaurants dans le format attendu par le site.
+            ArrayList<HashMap<String, Object>> restaurants = new ArrayList<>();
 
             PreparedStatement st = conn.prepareStatement("SELECT * FROM Restaurant");
             ResultSet rs = st.executeQuery();
             while (rs.next()) {
-               Double[] coupleCord = new Double[2];
-               coupleCord[0] = rs.getDouble("coordonneesX");
-               coupleCord[1] = rs.getDouble("coordonneesY");
-               tabCord.add(coupleCord);
+               HashMap<String, Object> restaurant = new HashMap<>();
+               restaurant.put("idRestaurant", rs.getInt("idRestaurant"));
+               restaurant.put("nom", rs.getString("nom"));
+               restaurant.put("adresse", rs.getString("adresse"));
+               restaurant.put("lat", rs.getDouble("coordonneesY"));
+               restaurant.put("lon", rs.getDouble("coordonneesX"));
+               restaurants.add(restaurant);
             }
-            return new Reponse(true, "La liste a été transmise", tabCord) ;
+            return new Reponse(true, "La liste a été transmise", restaurants) ;
         } catch (SQLException e) {
             System.out.println("Erreur lors de la connexion à la BD");
         }
@@ -40,14 +43,17 @@ public class Restaurant implements ServiceRestaurant {
      *
      * @param nomRestaurant nom du restaurant
      * @param idTable id de la table
+     * @param dateHeure date et heure de la réservation au format yyyy-mm-dd hh:mm:ss
      * @param nom nom du client
      * @param prenom prénom du client
      * @param nombreConvives nombre de convives
      * @param telephone numéro de téléphone du client
      * @return réponse JSON
      */
-    public Reponse reserverTable(String nomRestaurant, int idTable, String nom, String prenom, int nombreConvives, String telephone) {
+    public Reponse reserverTable(String nomRestaurant, int idTable, String dateHeure, String nom, String prenom, int nombreConvives, String telephone) {
         try {
+            Timestamp dateReservation = Timestamp.valueOf(dateHeure);
+            Timestamp finReservation = new Timestamp(dateReservation.getTime() + 3600000); // On considère que la réservation dure 1h, on ajoute donc 3600000ms à la date de début pour obtenir la date de fin
             PreparedStatement st = conn.prepareStatement("SELECT idRestaurant FROM Restaurant WHERE nom = ?");
             st.setString(1, nomRestaurant);
             ResultSet rs = st.executeQuery();
@@ -56,17 +62,35 @@ public class Restaurant implements ServiceRestaurant {
                 return new Reponse(false, "Le restaurant n'existe pas", null);
             }
             int idRest = rs.getInt("idRestaurant");
+
+            // Vérifie que la table existe et qu'elle a assez de places
+            st = conn.prepareStatement(
+                    "SELECT COUNT(*) FROM Reservation " +
+                            "WHERE idRestaurant = ? AND idTable = ? " +
+                            "AND dateRes < ? AND dateRes + 1/24 > ?"
+            );
+            st.setInt(1, idRest);
+            st.setInt(2, idTable);
+            st.setTimestamp(3, finReservation);
+            st.setTimestamp(4, dateReservation);
+            rs = st.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                conn.rollback();
+                return new Reponse(false, "Une réservation existe déjà sur ce créneau", null);
+            }
+
             // Création de la réservation
             st = conn.prepareStatement(
                     "INSERT INTO Reservation " +
-                            "(idRestaurant, nomClient, prenomClient, idTable, reservee, nbConvives, numTel) " +
-                            "VALUES (?, ?, ?, ?, 1, ?, ?)");
+                            "(idRestaurant, nomClient, prenomClient, idTable, dateRes, nbConvives, numTel) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?)");
             st.setInt(1, idRest);
             st.setString(2, nom);
             st.setString(3, prenom);
             st.setInt(4, idTable);
-            st.setInt(5, nombreConvives);
-            st.setString(6, telephone);
+            st.setTimestamp(5, dateReservation);
+            st.setInt(6, nombreConvives);
+            st.setString(7, telephone);
             int rowsAffected = st.executeUpdate();
             if (rowsAffected == 0) {
                 conn.rollback();
@@ -74,6 +98,8 @@ public class Restaurant implements ServiceRestaurant {
             }
             conn.commit();
             return new Reponse(true, "La réservation a été ajoutée", true);
+        } catch (IllegalArgumentException e) {
+            return new Reponse(false, "Date de réservation invalide", null);
         } catch (SQLException e) {
             try {
                 conn.rollback();

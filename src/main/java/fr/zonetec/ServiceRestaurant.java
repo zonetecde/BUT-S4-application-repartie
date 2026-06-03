@@ -9,6 +9,7 @@ public interface ServiceRestaurant extends Remote {
     Reponse reserverTable(
             String nomRestaurant,
             int idTable,
+            String dateHeure,
             String nom,
             String prenom,
             int nombreConvives,

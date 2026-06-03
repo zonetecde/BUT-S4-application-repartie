@@ -44,6 +44,10 @@ public class ProxyServeur {
 
         // Crée l'endpoint pour récupérer les coordonnées des restaurants
         server.createContext("/api/restaurants/coordonnees", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
             // Vérifie que la méthode HTTP est GET
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
                 sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
@@ -55,6 +59,10 @@ public class ProxyServeur {
         });
 
         server.createContext("/api/restaurants/reserver", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
             // Vérifie que la méthode HTTP est POST
             if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
                 sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
@@ -73,6 +81,11 @@ public class ProxyServeur {
                 return;
             }
 
+            if (!params.containsKey("dateHeure")) {
+                sendJson(exchange, 400, new Reponse(false, "Paramètre dateHeure manquant", null).toJson());
+                return;
+            }
+
             int idTable;
             int nombreConvives;
             try {
@@ -87,6 +100,7 @@ public class ProxyServeur {
             Reponse response = serviceRestaurant.reserverTable(
                     params.get("nomRestaurant"),
                     idTable,
+                    params.get("dateHeure"),
                     params.get("nom"),
                     params.get("prenom"),
                     nombreConvives,
@@ -97,6 +111,10 @@ public class ProxyServeur {
 
         // Crée l'endpoint pour récupérer les tables disponibles d'un restaurant
         server.createContext("/api/restaurants/tables", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
             // Vérifie que la méthode HTTP est GET
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
                 sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
@@ -110,6 +128,10 @@ public class ProxyServeur {
 
         // Crée l'endpoint pour fetch une URL avec le service RMI de Fetch
         server.createContext("/api/fetch", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
                 sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
                 return;
@@ -126,6 +148,24 @@ public class ProxyServeur {
     }
 
     /**
+     * Répond aux requêtes CORS preflight.
+     *
+     * @param exchange échange HTTP courant
+     * @return true si la requête a été traitée
+     * @throws IOException si l'écriture de la réponse échoue
+     */
+    private static boolean handleOptions(HttpExchange exchange) throws IOException {
+        if (!exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+            return false;
+        }
+
+        addCorsHeaders(exchange);
+        exchange.sendResponseHeaders(204, -1);
+        exchange.close();
+        return true;
+    }
+
+    /**
      * Envoie une réponse JSON HTTP.
      *
      * @param exchange échange HTTP courant
@@ -137,15 +177,25 @@ public class ProxyServeur {
         byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
 
         exchange.getResponseHeaders().add("Content-Type", "application/json; charset=utf-8");
-
-        // Pour autoriser votre site web à appeler le proxy.
-        exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+        addCorsHeaders(exchange);
 
         exchange.sendResponseHeaders(statusCode, bytes.length);
 
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(bytes);
         }
+    }
+
+    /**
+     * Ajoute les headers CORS communs aux réponses du proxy.
+     *
+     * @param exchange échange HTTP courant
+     */
+    private static void addCorsHeaders(HttpExchange exchange) {
+        // Pour autoriser votre site web à appeler le proxy.
+        exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
     }
 
     /**
