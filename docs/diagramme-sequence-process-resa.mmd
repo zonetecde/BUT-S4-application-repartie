@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Client
+    participant Site
+    participant Proxy
+    participant Restaurant as ServiceRestaurant (RMI)
+    participant BD as Base de données
+
+    Client->>+Site: ouvre le site
+    Site->>+Proxy: GET /api/restaurants/tables?nomRestaurant=...
+    Proxy->>+Restaurant: recupererTablesRestaurant(nomRestaurant)
+    Restaurant->>+BD: SELECT tables disponibles FOR UPDATE
+    BD-->>-Restaurant: idTable => nombre de places + lock les lignes
+    Restaurant-->>-Proxy: Reponse(data)
+    Proxy-->>-Site: JSON
+    deactivate Site
+
+    Client->>+Site: sélectionne une table
+    Site->>+Proxy: POST /api/restaurants/reserver?...&idTable=...
+    Proxy->>+Restaurant: reserverTable(..., idTable, ...)
+    Restaurant->>+BD: INSERT réservation puis commit
+    BD-->>-Restaurant: lignes débloquées
+    Restaurant-->>-Proxy: Reponse
+    Proxy-->>-Site: JSON
+    deactivate Site

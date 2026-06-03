@@ -84,6 +84,12 @@ public class Restaurant implements ServiceRestaurant {
         }
     }
 
+    /**
+     * Récupère les tables disponibles d'un restaurant et verrouille les lignes sélectionnées jusqu'à la réservation.
+     *
+     * @param nomRestaurant nom du restaurant
+     * @return réponse JSON contenant un dictionnaire idTable => nombre de places
+     */
     public Reponse recupererTablesRestaurant (String nomRestaurant) {
         //on initalise la connexion
         try {
@@ -100,7 +106,7 @@ public class Restaurant implements ServiceRestaurant {
                     "SELECT t.idTable, t.nbPlaces " +
                             "FROM Table_Resto t " +
                             "JOIN Restaurant r ON t.idRestaurant = r.idRestaurant " +
-                            "WHERE r.nom = ? AND t.reservee = 0 FOR UPDATE"
+                            "WHERE r.nom = ? AND t.reservee = 0 FOR UPDATE NOWAIT" // Mot clé nowait comme ça si c'est lock par une autre demande on attend pas
             );
             st.setString(1, nomRestaurant);
             rs = st.executeQuery();
@@ -117,6 +123,10 @@ public class Restaurant implements ServiceRestaurant {
         }   catch (SQLException e) {
             try {
                 conn.rollback();
+                // Si le code d'erreur est 54 c'est que la ligne est verrouillée par une autre transaction, donc qu'une autre personne est en train de réserver
+                if (e.getErrorCode() == 54) {
+                    return new Reponse(false, "Veuillez patienter, quelqu'un est déjà en train de réserver une table", null);
+                }
                 System.out.println(e);
                 return new Reponse(false, "Erreur lors de l'appel à la BD", null);
             } catch (SQLException ex) {
@@ -127,6 +137,9 @@ public class Restaurant implements ServiceRestaurant {
 
 
 
+    /**
+     * Initialise le service restaurant avec une connexion en transaction manuelle.
+     */
     public Restaurant() {
         try {
             this.conn = ConnectionBuilder.createConnection();
