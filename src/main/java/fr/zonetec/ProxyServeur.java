@@ -31,8 +31,8 @@ public class ProxyServeur {
         String rmiHost = args.length > 0 ? args[0] : "localhost";
         int rmiPort = args.length > 1 ? Integer.parseInt(args[1]) : 1099;
 
-        // On va exposer notre API sur le port 8080
-        int port = args.length > 2 ? Integer.parseInt(args[2]) : 8080;
+        // On va exposer notre API sur le port 8081
+        int port = args.length > 2 ? Integer.parseInt(args[2]) : 8081;
 
         // Récupère l'annuaire RMI et les services
         Registry reg = LocateRegistry.getRegistry(rmiHost, rmiPort);
@@ -63,27 +63,48 @@ public class ProxyServeur {
 
             // Vérifie les paramètres de la requête
             Map<String, String> params = getQueryParams(exchange);
+            if (!params.containsKey("idTable")) {
+                sendJson(exchange, 400, new Reponse(false, "Paramètre idTable manquant", null).toJson());
+                return;
+            }
+
             if (!params.containsKey("nombreConvives")) {
                 sendJson(exchange, 400, new Reponse(false, "Paramètre nombreConvives manquant", null).toJson());
                 return;
             }
 
+            int idTable;
             int nombreConvives;
             try {
+                idTable = Integer.parseInt(params.get("idTable"));
                 nombreConvives = Integer.parseInt(params.get("nombreConvives"));
             } catch (NumberFormatException e) {
-                sendJson(exchange, 400, new Reponse(false, "Paramètre nombreConvives invalide", null).toJson());
+                sendJson(exchange, 400, new Reponse(false, "Paramètre idTable ou nombreConvives invalide", null).toJson());
                 return;
             }
 
             // Appel la méthode du service RMI et envoie la réponse au client
             Reponse response = serviceRestaurant.reserverTable(
                     params.get("nomRestaurant"),
+                    idTable,
                     params.get("nom"),
                     params.get("prenom"),
                     nombreConvives,
                     params.get("telephone")
             );
+            sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
+        });
+
+        // Crée l'endpoint pour récupérer les tables disponibles d'un restaurant
+        server.createContext("/api/restaurants/tables", exchange -> {
+            // Vérifie que la méthode HTTP est GET
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            // Appel la méthode du service RMI et envoie la réponse au client
+            Reponse response = serviceRestaurant.recupererTablesRestaurant(getQueryParams(exchange).get("nomRestaurant"));
             sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
         });
 

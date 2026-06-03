@@ -8,9 +8,9 @@ export interface Incident {
 }
 
 export async function recupererIncidentsNancy() {
-    // Le proxy java est exposé sur le port 8080
+    // Le proxy java est exposé sur le port 8081
     // On appel l'endpoint /api/fetch qui fait appel au service RMI Fetch et  qui prend en paramètre l'url de la page à fetch
-    const resp = await fetch("http://localhost:8080/api/fetch?url=https://carto.g-ny.eu/data/cifs/cifs_waze_v2.json");
+    const resp = await fetch("http://localhost:8081/api/fetch?url=https://carto.g-ny.eu/data/cifs/cifs_waze_v2.json");
     const respData = await resp.json(); // contient success et data
     if (!respData.success) {
         console.error("Erreur lors de la récupération des incidents :", respData.error);
@@ -22,7 +22,7 @@ export async function recupererIncidentsNancy() {
     // Pour chaque incidents
     return incidents.map((incident: any) => {
         // Extrait les coordonnées à partir de l'attribiut polyline
-        const [lat, lon] = incident.location.polyline.split(' ');
+        const [lat, lon] = incident.location.polyline.split(" ");
 
         return {
             id: incident.id,
@@ -30,7 +30,7 @@ export async function recupererIncidentsNancy() {
             description: incident.description,
             lat: parseFloat(lat),
             lon: parseFloat(lon),
-            location_description: incident.location?.location_description
+            location_description: incident.location?.location_description,
         };
     });
 }
