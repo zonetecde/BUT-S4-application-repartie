@@ -22,7 +22,7 @@ public class RestaurantClient {
         Reponse coordonnees = service.recupererCoordonneesRestaurantsNancy();
         System.out.println(coordonnees.toJson());
 
-        Reponse reservation = service.reserverTable("Restaurant test", "Dupont", "Jean", 4, "0600000000");
+        Reponse reservation = service.reserverTable("Grand Café Foy", "Dupont", "Jean", 4, "0600000000");
         System.out.println(reservation.toJson());
     }
 }
