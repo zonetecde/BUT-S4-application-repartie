@@ -93,7 +93,7 @@
     const filtreVelib = document.getElementById("filtre-velib").checked;
     if (filtreVelib) {
       const bikeIcon = L.divIcon({
-        html: '<div style="font-size: 24px; text-align: center;">\u{1F6B2}</div>',
+        html: '<div style="font-size: 24px; text-align: center; background: #bfdbfe; border-radius: 50%;">\u{1F6B2}</div>',
         className: "",
         iconSize: [24, 24],
         iconAnchor: [12, 12],
@@ -107,7 +107,7 @@
     const filtreRestaurant = document.getElementById("filtre-restaurant").checked;
     if (filtreRestaurant) {
       const foodIcon = L.divIcon({
-        html: '<div style="font-size: 24px; text-align: center;">\u{1F37D}\uFE0F</div>',
+        html: '<div style="font-size: 24px; text-align: center; background: #bbf7d0; border-radius: 50%;">\u{1F37D}\uFE0F</div>',
         className: "",
         iconSize: [24, 24],
         iconAnchor: [12, 12],
@@ -121,7 +121,7 @@
     const filtreIncident = document.getElementById("filtre-incident").checked;
     if (filtreIncident) {
       const warningIcon = L.divIcon({
-        html: '<div style="font-size: 24px; text-align: center;">\u26A0\uFE0F</div>',
+        html: '<div style="font-size: 24px; text-align: center; background: #fecaca; border-radius: 50%;">\u26A0\uFE0F</div>',
         className: "",
         iconSize: [24, 24],
         iconAnchor: [12, 12],
