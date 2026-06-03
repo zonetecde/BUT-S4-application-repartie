@@ -1,8 +1,7 @@
 package fr.zonetec;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.Serializable;
+import org.json.JSONObject;
 
 /**
  * Classe de réponse qui va permettre d'avoir un même format pour toutes les réponses.
@@ -33,13 +32,6 @@ public class Reponse implements Serializable {
     }
 
     public String toJson(){
-        ObjectMapper mapper = new ObjectMapper();
-        String json = null;
-        try {
-            json = mapper.writeValueAsString(this);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-        return json ;
+        return new JSONObject(this).toString();
     }
 }
