@@ -45,10 +45,27 @@
     });
   }
 
+  // restaurants.ts
+  async function recupererRestoNancy() {
+    const url2 = "http://localhost:8081/api/restaurants/coordonnees";
+    const response = await fetch(url2);
+    const dataResto = await response.json();
+    console.log(response, dataResto);
+    const restaurants2 = dataResto.data.map((resto) => ({
+      id: resto.idRestaurant,
+      nom: resto.nom,
+      adresse: resto.adresse,
+      lat: resto.lat,
+      lon: resto.lon
+    }));
+    return restaurants2;
+  }
+
   // app.mts
   var url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
   var incidents = [];
   var velibs = [];
+  var restaurants = [];
   var map;
   fetch(url).then((response) => response.json()).then(async (data) => {
     const lon = data.features[0].geometry.coordinates[0];
@@ -61,6 +78,7 @@
     }).addTo(map);
     try {
       velibs = await recupererVelibsNancy();
+      restaurants = await recupererRestoNancy();
       incidents = await recupererIncidentsNancy();
     } catch (error) {
       console.error("Erreur lors de la r\xE9cup\xE9ration des donn\xE9es :", error);
@@ -77,7 +95,6 @@
     if (filtreVelib) {
       const bikeIcon = L.divIcon({
         html: '<div style="font-size: 24px; text-align: center;">\u{1F6B2}</div>',
-        className: "bike-icon",
         iconSize: [24, 24],
         iconAnchor: [12, 12],
         popupAnchor: [0, -12]
@@ -87,11 +104,23 @@
         marker.bindPopup(`<b>${station.nom}</b><br>Adresse : ${station.adresse}<br>V\xE9los disponibles : ${station.velosDisponibles}<br>Places de parking libres : ${station.placesLibres}`);
       });
     }
+    const filtreRestaurant = document.getElementById("filtre-restaurant").checked;
+    if (filtreRestaurant) {
+      const foodIcon = L.divIcon({
+        html: '<div style="font-size: 24px; text-align: center;">\u{1F37D}\uFE0F</div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        popupAnchor: [0, -12]
+      });
+      restaurants.forEach((resto) => {
+        const marker = L.marker([resto.lat, resto.lon], { icon: foodIcon }).addTo(map);
+        marker.bindPopup(`<b>${resto.nom}</b><br>Adresse : ${resto.adresse}`);
+      });
+    }
     const filtreIncident = document.getElementById("filtre-incident").checked;
     if (filtreIncident) {
       const warningIcon = L.divIcon({
         html: '<div style="font-size: 24px; text-align: center;">\u26A0\uFE0F</div>',
-        className: "warning-icon",
         iconSize: [24, 24],
         iconAnchor: [12, 12],
         popupAnchor: [0, -12]

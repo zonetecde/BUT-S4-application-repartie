@@ -1,5 +1,6 @@
 import { recupererVelibsNancy, StationVelib } from "./velibs.js";
 import { Incident, recupererIncidentsNancy } from "./incidents.js";
+import { recupererRestoNancy } from "./restaurants.js";
 
 // On commence par récupérer les coordonnées de Nancy via l'API https://adresse.data.gouv.fr/outils/api-doc/adresse
 const url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
@@ -9,6 +10,7 @@ declare const L: any;
 
 let incidents: Incident[] = [];
 let velibs: StationVelib[] = [];
+let restaurants: Awaited<ReturnType<typeof recupererRestoNancy>> = [];
 let map: any; // Carte Leaflet
 
 // On fetch la réponse de l'API
@@ -33,6 +35,9 @@ fetch(url)
         try {
             // On récupère maintenant les informations sur les stations de velibs à Nancy
             velibs = await recupererVelibsNancy();
+
+            // On récupère les informations sur les restaurants à Nancy
+            restaurants = await recupererRestoNancy();
 
             // Et on récupère aussi les incidents à Nancy
             incidents = await recupererIncidentsNancy();
@@ -63,7 +68,6 @@ function updateMap() {
         // On met un emoji de vélo pour les stations de velibs
         const bikeIcon = L.divIcon({
             html: '<div style="font-size: 24px; text-align: center;">🚲</div>',
-            className: "bike-icon",
             iconSize: [24, 24],
             iconAnchor: [12, 12],
             popupAnchor: [0, -12],
@@ -75,6 +79,23 @@ function updateMap() {
         });
     }
 
+    // Regarde si la checkbox de filtre "filtre-restaurant" est en true
+    const filtreRestaurant = (document.getElementById("filtre-restaurant") as HTMLInputElement).checked;
+
+    if (filtreRestaurant) {
+        const foodIcon = L.divIcon({
+            html: '<div style="font-size: 24px; text-align: center;">🍽️</div>',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+            popupAnchor: [0, -12],
+        });
+
+        restaurants.forEach((resto) => {
+            const marker = L.marker([resto.lat, resto.lon], { icon: foodIcon }).addTo(map);
+            marker.bindPopup(`<b>${resto.nom}</b><br>Adresse : ${resto.adresse}`);
+        });
+    }
+
     // Regarde si la checkbox de filtre "filtre-incident" est en true
     const filtreIncident = (document.getElementById("filtre-incident") as HTMLInputElement).checked;
 
@@ -83,7 +104,6 @@ function updateMap() {
         // On met un emoji de warning pour les incidents
         const warningIcon = L.divIcon({
             html: '<div style="font-size: 24px; text-align: center;">⚠️</div>',
-            className: "warning-icon",
             iconSize: [24, 24],
             iconAnchor: [12, 12],
             popupAnchor: [0, -12],
