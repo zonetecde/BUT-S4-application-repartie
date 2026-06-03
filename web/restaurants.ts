@@ -1,4 +1,3 @@
-
 export interface RestaurantAPI {
     idRestaurant: number;
     nom: string;
@@ -12,7 +11,9 @@ export async function recupererRestoNancy() {
     const url = "http://localhost:8081/api/restaurants/coordonnees";
 
     const response = await fetch(url);
-    const dataResto = await response.json() as { data: RestaurantAPI[] };
+    const dataResto = (await response.json()) as { data: RestaurantAPI[] };
+
+    console.log(response, dataResto);
 
     // Transforme les données de l'API en interface Restaurant
     const restaurants = dataResto.data.map((resto: RestaurantAPI) => ({

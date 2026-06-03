@@ -2,9 +2,10 @@
 (() => {
   // restaurants.ts
   async function recupererRestoNancy() {
-    const url2 = "http://localhost:8080/api/restaurants/coordonnees";
+    const url2 = "http://localhost:8081/api/restaurants/coordonnees";
     const response = await fetch(url2);
     const dataResto = await response.json();
+    console.log(response, dataResto);
     const restaurants = dataResto.data.map((resto) => ({
       id: resto.idRestaurant,
       nom: resto.nom,
