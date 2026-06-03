@@ -128,7 +128,7 @@
           }
           const restaurantNameInput = document.getElementById("restaurant-name");
           if (restaurantNameInput) {
-            restaurantNameInput.value = resto.nom;
+            restaurantNameInput.innerText = resto.nom;
           }
         });
       });
