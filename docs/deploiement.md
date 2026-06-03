@@ -57,10 +57,10 @@ d'accéder aux services RMI.
 Depuis la racine du projet, exécuter :
 
 ```bash
-java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur localhost 1099 8080
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur localhost 1099 8081
 ```
 
-Les arguments correspondent à l'hôte RMI (donc localhost vu que les services sont sur la même machine), au port RMI, puis au port HTTP du proxy (on l'expose sur le port 8080). Si le serveur RMI est sur une autre machine, il faut remplacer `localhost` par son adresse IP.
+Les arguments correspondent à l'hôte RMI (donc localhost vu que les services sont sur la même machine), au port RMI, puis au port HTTP du proxy (on l'expose sur le port 8081). Si le serveur RMI est sur une autre machine, il faut remplacer `localhost` par son adresse IP.
 
 ## Lancement du client de test
 

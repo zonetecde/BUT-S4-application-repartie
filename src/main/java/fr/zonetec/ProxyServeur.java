@@ -31,8 +31,8 @@ public class ProxyServeur {
         String rmiHost = args.length > 0 ? args[0] : "localhost";
         int rmiPort = args.length > 1 ? Integer.parseInt(args[1]) : 1099;
 
-        // On va exposer notre API sur le port 8080
-        int port = args.length > 2 ? Integer.parseInt(args[2]) : 8080;
+        // On va exposer notre API sur le port 8081
+        int port = args.length > 2 ? Integer.parseInt(args[2]) : 8081;
 
         // Récupère l'annuaire RMI et les services
         Registry reg = LocateRegistry.getRegistry(rmiHost, rmiPort);

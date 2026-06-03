@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // web/velibs.ts
+  // velibs.ts
   async function recupererVelibsNancy() {
     const url2 = "https://api.cyclocity.fr/contracts/nancy/gbfs/v2/station_information.json";
     const response = await fetch(url2);
@@ -23,9 +23,9 @@
     return stations;
   }
 
-  // web/incidents.ts
+  // incidents.ts
   async function recupererIncidentsNancy() {
-    const resp = await fetch("http://localhost:8080/api/fetch?url=https://carto.g-ny.eu/data/cifs/cifs_waze_v2.json");
+    const resp = await fetch("http://localhost:8081/api/fetch?url=https://carto.g-ny.eu/data/cifs/cifs_waze_v2.json");
     const respData = await resp.json();
     if (!respData.success) {
       console.error("Erreur lors de la r\xE9cup\xE9ration des incidents :", respData.error);
@@ -45,7 +45,7 @@
     });
   }
 
-  // web/app.mts
+  // app.mts
   var url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
   fetch(url).then((response) => response.json()).then(async (data) => {
     const lon = data.features[0].geometry.coordinates[0];
@@ -57,13 +57,27 @@
       attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
     const stations = await recupererVelibsNancy();
+    const bikeIcon = L.divIcon({
+      html: '<div style="font-size: 24px; text-align: center;">\u{1F6B2}</div>',
+      className: "bike-icon",
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+      popupAnchor: [0, -12]
+    });
     stations.forEach((station) => {
-      const marker = L.marker([station.lat, station.lon]).addTo(map);
+      const marker = L.marker([station.lat, station.lon], { icon: bikeIcon }).addTo(map);
       marker.bindPopup(`<b>${station.nom}</b><br>Adresse : ${station.adresse}<br>V\xE9los disponibles : ${station.velosDisponibles}<br>Places de parking libres : ${station.placesVoitureDisponibles}`);
+    });
+    const warningIcon = L.divIcon({
+      html: '<div style="font-size: 24px; text-align: center;">\u26A0\uFE0F</div>',
+      className: "warning-icon",
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+      popupAnchor: [0, -12]
     });
     const incidents = await recupererIncidentsNancy();
     incidents.forEach((incident) => {
-      const marker = L.marker([incident.lat, incident.lon]).addTo(map);
+      const marker = L.marker([incident.lat, incident.lon], { icon: warningIcon }).addTo(map);
       marker.bindPopup(`<b>${incident.type}</b><br>Description : ${incident.description}`);
     });
   });
