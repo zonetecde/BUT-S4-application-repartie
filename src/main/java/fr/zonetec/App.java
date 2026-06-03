@@ -36,7 +36,7 @@ public class App {
             Registry reg = LocateRegistry.getRegistry("localhost");
             reg.rebind("restaurant", rd);
         } catch (RemoteException e) {
-            System.out.println("Machine distante non trouvé, annuaire non lancé ou nom de service déjà utilisé.");
+            System.out.println("Un problème est survenue lors de l'inscription du service dans l'annuaire : " + e);
         }
 
         // Service RMI du Fetch
@@ -48,7 +48,7 @@ public class App {
             Registry reg = LocateRegistry.getRegistry("localhost");
             reg.rebind("fetch", rd);
         } catch (RemoteException e) {
-            System.out.println("Machine distante non trouvé, annuaire non lancé ou nom de service déjà utilisé.");
+            System.out.println("Un problème est survenue lors de l'inscription du service dans l'annuaire : " + e);
         }
     }
 }
