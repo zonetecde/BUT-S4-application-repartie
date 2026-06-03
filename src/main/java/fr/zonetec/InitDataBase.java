@@ -28,7 +28,8 @@ public class InitDataBase {
             " reservee NUMBER(1) DEFAULT 0," +
             " nbPlaces NUMBER(2)," +
             " CONSTRAINT pk_table PRIMARY KEY (idTable)," +
-            " CONSTRAINT fk_table_restaurant FOREIGN KEY (idRestaurant) REFERENCES Restaurant(idRestaurant)" +
+            " CONSTRAINT fk_table_restaurant FOREIGN KEY (idRestaurant) REFERENCES Restaurant(idRestaurant)," +
+            " CONSTRAINT chk_table_reservee CHECK (reservee IN (0, 1))" +  // booléen
             ")";
 
         String reservationTable =
@@ -38,6 +39,7 @@ public class InitDataBase {
             " nomClient VARCHAR2(50) NOT NULL," +
             " prenomClient VARCHAR2(50)," +
             " idTable NUMBER(3)," + 
+            " dateRes DATE NOT NULL," +
             " nbConvives NUMBER(2)," +
             " numTel VARCHAR2(15)," +
             " CONSTRAINT pk_reservation PRIMARY KEY (idRestaurant, idReservation)," +
@@ -48,8 +50,6 @@ public class InitDataBase {
         String commandeTable = 
             "CREATE TABLE Commande (" +
             " idCommande NUMBER(3) GENERATED AS IDENTITY," +
-            " dateCom DATE NOT NULL," +
-            " datePaie DATE," +
             " montant NUMBER(6,2)," +
             " nbPers NUMBER(2)," + 
             " idTable NUMBER(3)," + 
@@ -178,7 +178,7 @@ public class InitDataBase {
                     stmt.execute(plat4);
                     stmt.execute(plat5);
                     stmt.execute(plat6);
-                    
+
                     System.out.println("Insertion finie");
                 } else {
                     System.out.println("La table Plat contient déjà des données");
