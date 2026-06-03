@@ -1,0 +1,65 @@
+@startuml
+skinparam changepage "true"
+skinparam linetype ortho
+hide circle
+
+entity "Restaurant" as Restaurant {
+  * **idRestaurant : NUMBER(3) [PK]**
+  --
+  * nom : VARCHAR2(100)
+  adresse : VARCHAR2(200)
+  coordonneesX : NUMBER(9,6)
+  coordonneesY : NUMBER(9,6)
+}
+
+entity "Table_Resto" as Table_Resto {
+  * **idTable : NUMBER(3) [PK]**
+  --
+  * idRestaurant : NUMBER(3) [FK]
+  reservee : NUMBER(1)
+  nbPlaces : NUMBER(2)
+}
+
+entity "Reservation" as Reservation {
+  * **idRestaurant : NUMBER(3) [PK][FK]**
+  * **idReservation : NUMBER(3) [PK]**
+  --
+  * nomClient : VARCHAR2(50)
+  prenomClient : VARCHAR2(50)
+  idTable : NUMBER(3) [FK]
+  * dateRes : DATE
+  nbConvives : NUMBER(2)
+  numTel : VARCHAR2(15)
+}
+
+entity "Commande" as Commande {
+  * **idCommande : NUMBER(3) [PK]**
+  --
+  montant : NUMBER(6,2)
+  nbPers : NUMBER(2)
+  idTable : NUMBER(3) [FK]
+}
+
+entity "Plat" as Plat {
+  * **idPlat : NUMBER(3) [PK]**
+  --
+  * libelle : VARCHAR2(100)
+  * prixUnit : NUMBER(5,2)
+  qteStockee : NUMBER(4)
+}
+
+entity "Contient" as Contient {
+  * **idCommande : NUMBER(3) [PK][FK]**
+  * **idPlat : NUMBER(3) [PK][FK]**
+  --
+  * quantite : NUMBER(3)
+}
+
+' Relations entre entités
+Restaurant "1" -- "0..*" Table_Resto : possède >
+Restaurant "1" -- "0..*" Reservation : enregistre >
+Table_Resto "0..1" -- "0..*" Reservation : est assignée à <
+Table_Resto "1" -- "0..*" Commande : passe >
+Commande "1" -- "1..*" Contient
+Plat "1" -- "0..*" Contient
+@enduml
