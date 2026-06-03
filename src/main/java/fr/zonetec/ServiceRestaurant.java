@@ -9,8 +9,11 @@ public interface ServiceRestaurant extends Remote {
 
     Reponse reserverTable(
             String nomRestaurant,
+            int idTable,
             String nom,
             String prenom,
             int nombreConvives,
             String telephone) throws RemoteException;
+
+    Reponse recupererTablesRestaurant (String nomRestaurant);
 }
