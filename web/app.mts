@@ -3,6 +3,9 @@ import { recupererVelibsNancy } from "./velibs.js";
 // On commence par récupérer les coordonnées de Nancy via l'API https://adresse.data.gouv.fr/outils/api-doc/adresse
 const url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
 
+// L existe car il est definit dans le Html, mais TypeScript ne le sait pas
+declare const L: any; 
+
 // On fetch la réponse de l'API
 fetch(url)
     .then((response) => response.json())
@@ -14,7 +17,7 @@ fetch(url)
         console.log(`Coordonnées de Nancy : lat=${lat}, lon=${lon}`);
 
         // On initialise la carte avec les coordonnées de Nancy
-        var map = L.map("map").setView([lat, lon], 13);
+        let map = L.map("map").setView([lat, lon], 13);
 
         // On ajoute les tuiles sur la carte
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
