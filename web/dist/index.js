@@ -93,7 +93,7 @@
     const filtreVelib = document.getElementById("filtre-velib").checked;
     if (filtreVelib) {
       const bikeIcon = L.divIcon({
-        html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #bfdbfe; border-radius: 50%;">\u{1F6B2}</div>',
+        html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #bfdbfe; border: 2px solid #1d4ed8; border-radius: 50%;">\u{1F6B2}</div>',
         className: "",
         iconSize: [24, 24],
         iconAnchor: [12, 12],
@@ -107,7 +107,7 @@
     const filtreRestaurant = document.getElementById("filtre-restaurant").checked;
     if (filtreRestaurant) {
       const foodIcon = L.divIcon({
-        html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #bbf7d0; border-radius: 50%;">\u{1F37D}\uFE0F</div>',
+        html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #bbf7d0; border: 2px solid #15803d; border-radius: 50%;">\u{1F37D}\uFE0F</div>',
         className: "",
         iconSize: [24, 24],
         iconAnchor: [12, 12],
@@ -121,7 +121,7 @@
     const filtreIncident = document.getElementById("filtre-incident").checked;
     if (filtreIncident) {
       const warningIcon = L.divIcon({
-        html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #fecaca; border-radius: 50%;">\u26A0\uFE0F</div>',
+        html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #fecaca; border: 2px solid #b91c1c; border-radius: 50%;">\u26A0\uFE0F</div>',
         className: "",
         iconSize: [24, 24],
         iconAnchor: [12, 12],

@@ -67,7 +67,7 @@ function updateMap() {
         // Ajoute les stations sur la carte
         // On met un emoji de vélo pour les stations de velibs
         const bikeIcon = L.divIcon({
-            html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #bfdbfe; border-radius: 50%;">🚲</div>',
+            html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #bfdbfe; border: 2px solid #1d4ed8; border-radius: 50%;">🚲</div>',
             className: "",
             iconSize: [24, 24],
             iconAnchor: [12, 12],
@@ -85,7 +85,7 @@ function updateMap() {
 
     if (filtreRestaurant) {
         const foodIcon = L.divIcon({
-            html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #bbf7d0; border-radius: 50%;">🍽️</div>',
+            html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #bbf7d0; border: 2px solid #15803d; border-radius: 50%;">🍽️</div>',
             className: "",
             iconSize: [24, 24],
             iconAnchor: [12, 12],
@@ -105,7 +105,7 @@ function updateMap() {
         // On ajoute maintenant les incidents sur la carte
         // On met un emoji de warning pour les incidents
         const warningIcon = L.divIcon({
-            html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #fecaca; border-radius: 50%;">⚠️</div>',
+            html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #fecaca; border: 2px solid #b91c1c; border-radius: 50%;">⚠️</div>',
             className: "",
             iconSize: [24, 24],
             iconAnchor: [12, 12],
