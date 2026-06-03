@@ -49,6 +49,19 @@ rmiregistry 1099 &
 java -jar restaurant-rmi-server.jar
 ```
 
+## Lancement du proxy HTTP
+
+Le proxy HTTP doit être lancé après le serveur RMI.
+Il permet d'exposer les services RMI via une API REST, ce qui permet au site internet
+d'accéder aux services RMI.
+Depuis la racine du projet, exécuter :
+
+```bash
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur localhost 1099 8080
+```
+
+Les arguments correspondent à l'hôte RMI (donc localhost vu que les services sont sur la même machine), au port RMI, puis au port HTTP du proxy (on l'expose sur le port 8080). Si le serveur RMI est sur une autre machine, il faut remplacer `localhost` par son adresse IP.
+
 ## Lancement du client de test
 
 Depuis la racine du projet, lancer :
