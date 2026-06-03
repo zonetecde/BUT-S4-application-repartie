@@ -15,5 +15,5 @@ public interface ServiceRestaurant extends Remote {
             int nombreConvives,
             String telephone) throws RemoteException;
 
-    Reponse recupererTablesRestaurant (String nomRestaurant);
+    Reponse recupererTablesRestaurant (String nomRestaurant) throws RemoteException;
 }

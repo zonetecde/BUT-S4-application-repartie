@@ -1,5 +1,6 @@
 package fr.zonetec;
 
+import java.rmi.RemoteException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -116,7 +117,7 @@ public class Restaurant implements ServiceRestaurant {
      * @param nomRestaurant nom du restaurant
      * @return réponse JSON contenant un dictionnaire idTable => nombre de places
      */
-    public Reponse recupererTablesRestaurant (String nomRestaurant) {
+    public Reponse recupererTablesRestaurant (String nomRestaurant) throws RemoteException {
         //on initalise la connexion
         try {
             //on verifie l'existence du restaurant
