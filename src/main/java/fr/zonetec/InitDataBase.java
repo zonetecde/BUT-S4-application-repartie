@@ -28,7 +28,8 @@ public class InitDataBase {
             " reservee NUMBER(1) DEFAULT 0," +
             " nbPlaces NUMBER(2)," +
             " CONSTRAINT pk_table PRIMARY KEY (idTable)," +
-            " CONSTRAINT fk_table_restaurant FOREIGN KEY (idRestaurant) REFERENCES Restaurant(idRestaurant)" +
+            " CONSTRAINT fk_table_restaurant FOREIGN KEY (idRestaurant) REFERENCES Restaurant(idRestaurant)," +
+            " CONSTRAINT chk_table_reservee CHECK (reservee IN (0, 1))" +  // booléen
             ")";
 
         String reservationTable =
@@ -38,6 +39,7 @@ public class InitDataBase {
             " nomClient VARCHAR2(50) NOT NULL," +
             " prenomClient VARCHAR2(50)," +
             " idTable NUMBER(3)," + 
+            " dateRes DATE NOT NULL," +
             " nbConvives NUMBER(2)," +
             " numTel VARCHAR2(15)," +
             " CONSTRAINT pk_reservation PRIMARY KEY (idRestaurant, idReservation)," +
@@ -48,8 +50,6 @@ public class InitDataBase {
         String commandeTable = 
             "CREATE TABLE Commande (" +
             " idCommande NUMBER(3) GENERATED AS IDENTITY," +
-            " dateCom DATE NOT NULL," +
-            " datePaie DATE," +
             " montant NUMBER(6,2)," +
             " nbPers NUMBER(2)," + 
             " idTable NUMBER(3)," + 
@@ -90,7 +90,13 @@ public class InitDataBase {
         }
     }
 
-
+    /**
+     * Méthode qui permet d'exécuter une table
+     * @param stmt le statement
+     * @param table la table à exécuter
+     * @param nomTable le nom de la table
+     * @throws SQLException
+     */
     public static void executeTable(Statement stmt, String table, String nomTable) throws SQLException {
         try {
             stmt.execute(table);
@@ -141,5 +147,46 @@ public class InitDataBase {
         } catch (SQLException e) {
             System.err.println("Erreur lors des insertions dans la table Restaurant : " + e.getMessage());
         }
+    }
+
+
+    /**
+     * Ajout des entrées de test dans la table Plat si elle est vide.
+     * @param connection connexion JDBC à la base de données
+     */
+    public static void creerEntreesPlat(Connection connection) {
+        String nbInsertion = "SELECT COUNT(*) FROM Plat";
+        try (Statement stmt = connection.createStatement();
+            ResultSet rs = stmt.executeQuery(nbInsertion)) {
+            
+            if (rs.next()) {
+                int count = rs.getInt(1);
+
+                if (count == 0) {
+                    System.out.println("Table Plat vide --> Insertion des données");
+
+                    String plat1 = "INSERT INTO Plat (libelle, prixUnit, qteStockee) VALUES ('Quiche Lorraine traditionnelle', 12.50, 40)";
+                    String plat2 = "INSERT INTO Plat (libelle, prixUnit, qteStockee) VALUES ('Bouchée à la reine et frites', 16.90, 25)";
+                    String plat3 = "INSERT INTO Plat (libelle, prixUnit, qteStockee) VALUES ('Pâté lorrain maison', 8.50, 50)";
+                    String plat4 = "INSERT INTO Plat (libelle, prixUnit, qteStockee) VALUES ('Escalope de veau à la crème', 21.00, 15)";
+                    String plat5 = "INSERT INTO Plat (libelle, prixUnit, qteStockee) VALUES ('Tarte aux mirabelles de Lorraine', 6.90, 35)";
+                    String plat6 = "INSERT INTO Plat (libelle, prixUnit, qteStockee) VALUES ('Crème brûlée', 7.20, 25)";
+
+                    stmt.execute(plat1);
+                    stmt.execute(plat2);
+                    stmt.execute(plat3);
+                    stmt.execute(plat4);
+                    stmt.execute(plat5);
+                    stmt.execute(plat6);
+
+                    System.out.println("Insertion finie");
+                } else {
+                    System.out.println("La table Plat contient déjà des données");
+                }
+            } 
+        } catch (SQLException e) {
+            System.err.println("Erreur lors des insertions dans la table Plat : " + e.getMessage());
+        }
+
     }
 }

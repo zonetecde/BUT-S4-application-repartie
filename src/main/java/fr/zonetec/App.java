@@ -20,12 +20,13 @@ public class App {
             Connection connection = ConnectionBuilder.createConnection();
             InitDataBase.creerTables(connection);
             InitDataBase.creerEntreesRestaurant(connection);
+            InitDataBase.creerEntreesPlat(connection);
         } catch (SQLException e) {
             System.err.println("Erreur, impossible de se connecter ou d'initialiser la base de données");
             return;
         }
         
-        // Service RMI
+        // Service RMI du Restaurant
         Restaurant lc = new Restaurant();
 
         try {
@@ -33,6 +34,18 @@ public class App {
 
             Registry reg = LocateRegistry.getRegistry("localhost");
             reg.rebind("restaurant", rd);
+        } catch (RemoteException e) {
+            System.out.println("Machine distante non trouvé, annuaire non lancé ou nom de service déjà utilisé.");
+        }
+
+        // Service RMI du Fetch
+        Fetch fetch = new Fetch();
+
+        try {
+            ServiceFetch rd = (ServiceFetch) UnicastRemoteObject.exportObject(fetch, 0);
+
+            Registry reg = LocateRegistry.getRegistry("localhost");
+            reg.rebind("fetch", rd);
         } catch (RemoteException e) {
             System.out.println("Machine distante non trouvé, annuaire non lancé ou nom de service déjà utilisé.");
         }
