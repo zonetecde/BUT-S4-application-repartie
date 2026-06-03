@@ -1,0 +1,5 @@
+{
+    "scripts": {
+        "build": "npx esbuild app.mts --bundle --sourcemap --target=es2020 --outfile=web/dist/index.js"
+    }
+}
