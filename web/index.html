@@ -12,12 +12,25 @@
         <!-- Notre script JS -->
         <script type="module" src="dist/index.js"></script>
 
-        <link rel="stylesheet" href="app.css">
+        <!-- Tailwind CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     </head>
-    <body>
-        <p>Carte des stations velibs de Nancy :</p>
+    <body class="bg-blue-100 w-screen h-screen flex flex-col p-6 box-border">
+        <p class="text-xl underline mb-3"><strong>Carte des stations velibs de Nancy :</strong></p>
 
         <!-- Div dans lequel la carte sera affichée -->
-        <div id="map"></div>
+        <div class="flex-1 flex flex-row gap-4">
+            <div id="map" class="w-full flex-1 border-4 border-blue-300 rounded-xl shadow-2xl shadow-gray-600"></div>
+
+            <section class="w-1/3 bg-blue-100 rounded-xl p-4 border-4 border-blue-300 shadow-2xl shadow-gray-600">
+                <p class="text-lg"><strong>Filtres :</strong></p>
+
+                <input type="checkbox" id="filtre-velib" checked class="mr-2" onchange="updateMap()" />
+                <label for="filtre-velib">Afficher les velibs</label><br />
+
+                <input type="checkbox" id="filtre-incident" checked class="mr-2" onchange="updateMap()" />
+                <label for="filtre-incident">Afficher les incidents</label><br />
+            </section>
+        </div>
     </body>
 </html>

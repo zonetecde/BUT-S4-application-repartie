@@ -23,17 +23,17 @@ export interface StationVelib {
     placesLibres: number;
 }
 
-export async function recupererVelibsNancy() {
+export async function recupererVelibsNancy(): Promise<StationVelib[]> {
     // On commence par récupérer l'ensemble des stations velibs sur Nancy
     const url = "https://api.cyclocity.fr/contracts/nancy/gbfs/v2/station_information.json";
 
     const response = await fetch(url);
-    const dataStations = await response.json() as { data: { stations: GBFSStationInfo[] } };
+    const dataStations = (await response.json()) as { data: { stations: GBFSStationInfo[] } };
 
     // Récupère aussi les détails des stations
     const urlDetails = "https://api.cyclocity.fr/contracts/nancy/gbfs/v2/station_status.json";
     const responseDetails = await fetch(urlDetails);
-    const dataDetails = await responseDetails.json() as { data: { stations: GBFSStationStatus[] } };
+    const dataDetails = (await responseDetails.json()) as { data: { stations: GBFSStationStatus[] } };
 
     // Itère sur chaque station et récupère
     // - ses coordonnées
@@ -47,11 +47,11 @@ export async function recupererVelibsNancy() {
         return {
             id: station.station_id,
             nom: station.name,
-            adresse: station.address,
+            adresse: station.address || "",
             lat: station.lat,
             lon: station.lon,
             velosDisponibles: details?.num_bikes_available ?? 0,
-            placesVoitureDisponibles: details?.num_docks_available ?? 0,
+            placesLibres: details?.num_docks_available ?? 0,
         };
     });
 

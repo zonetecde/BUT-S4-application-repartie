@@ -1,4 +1,4 @@
-import { recupererVelibsNancy } from "./velibs.js";
+import { recupererVelibsNancy, StationVelib } from "./velibs.js";
 import { Incident, recupererIncidentsNancy } from "./incidents.js";
 
 // On commence par récupérer les coordonnées de Nancy via l'API https://adresse.data.gouv.fr/outils/api-doc/adresse
@@ -6,6 +6,10 @@ const url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
 
 // L existe car il est definit dans le Html, mais TypeScript ne le sait pas
 declare const L: any;
+
+let incidents: Incident[] = [];
+let velibs: StationVelib[] = [];
+let map: any; // Carte Leaflet
 
 // On fetch la réponse de l'API
 fetch(url)
@@ -18,7 +22,7 @@ fetch(url)
         console.log(`Coordonnées de Nancy : lat=${lat}, lon=${lon}`);
 
         // On initialise la carte avec les coordonnées de Nancy
-        let map = L.map("map").setView([lat, lon], 13);
+        map = L.map("map").setView([lat, lon], 13);
 
         // On ajoute les tuiles sur la carte
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -26,9 +30,35 @@ fetch(url)
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(map);
 
-        // On récupère maintenant les informations sur les stations de velibs à Nancy
-        const stations = await recupererVelibsNancy();
+        try {
+            // On récupère maintenant les informations sur les stations de velibs à Nancy
+            velibs = await recupererVelibsNancy();
 
+            // Et on récupère aussi les incidents à Nancy
+            incidents = await recupererIncidentsNancy();
+        } catch (error: any) {
+            // C'est un catch controllé : quand on travail sur nos machines,
+            // recupererIncidentsNancy ne fonctionne pas car on a pas accès au proxy
+            // java.
+            console.error("Erreur lors de la récupération des données :", error);
+        }
+
+        // Affiche la carte
+        updateMap();
+    });
+
+function updateMap() {
+    // Clear tous les markers de la carte avant de les réafficher
+    map.eachLayer((layer: any) => {
+        if (layer instanceof L.Marker) {
+            map.removeLayer(layer);
+        }
+    });
+
+    // Regarde si la checkbox de filtre "filtre-velib" est en true
+    const filtreVelib = (document.getElementById("filtre-velib") as HTMLInputElement).checked;
+
+    if (filtreVelib) {
         // Ajoute les stations sur la carte
         // On met un emoji de vélo pour les stations de velibs
         const bikeIcon = L.divIcon({
@@ -39,11 +69,16 @@ fetch(url)
             popupAnchor: [0, -12],
         });
 
-        stations.forEach((station) => {
+        velibs.forEach((station) => {
             const marker = L.marker([station.lat, station.lon], { icon: bikeIcon }).addTo(map);
-            marker.bindPopup(`<b>${station.nom}</b><br>Adresse : ${station.adresse}<br>Vélos disponibles : ${station.velosDisponibles}<br>Places de parking libres : ${station.placesVoitureDisponibles}`);
+            marker.bindPopup(`<b>${station.nom}</b><br>Adresse : ${station.adresse}<br>Vélos disponibles : ${station.velosDisponibles}<br>Places de parking libres : ${station.placesLibres}`);
         });
+    }
 
+    // Regarde si la checkbox de filtre "filtre-incident" est en true
+    const filtreIncident = (document.getElementById("filtre-incident") as HTMLInputElement).checked;
+
+    if (filtreIncident) {
         // On ajoute maintenant les incidents sur la carte
         // On met un emoji de warning pour les incidents
         const warningIcon = L.divIcon({
@@ -54,10 +89,11 @@ fetch(url)
             popupAnchor: [0, -12],
         });
 
-        // Ajoute les incidents sur la carte
-        const incidents = await recupererIncidentsNancy();
         incidents.forEach((incident: Incident) => {
             const marker = L.marker([incident.lat, incident.lon], { icon: warningIcon }).addTo(map);
             marker.bindPopup(`<b>${incident.type}</b><br>Description : ${incident.description}`);
         });
-    });
+    }
+}
+
+(window as any).updateMap = updateMap; // Expose la fonction updateMap pour qu'elle puisse être appelée depuis le HTML
