@@ -95,6 +95,30 @@ function updateMap() {
         restaurants.forEach((resto) => {
             const marker = L.marker([resto.lat, resto.lon], { icon: foodIcon }).addTo(map);
             marker.bindPopup(`<b>${resto.nom}</b><br>Adresse : ${resto.adresse}`);
+
+            // Pour les restaurants, on veut afficher un form de réservation
+            // de table lorsqu'on clique dessus.
+            marker.on("click", (event: any) => {
+                console.log("Restaurant cliqué :", resto.nom, event);
+
+                // Cache la div de filtre
+                const filtresDiv = document.getElementById("filtres");
+                if (filtresDiv) {
+                    filtresDiv.style.display = "none";
+                }
+
+                // Affiche le formulaire de réservation
+                const reservationForm = document.getElementById("reservation-form");
+                if (reservationForm) {
+                    reservationForm.style.display = "block";
+                }
+
+                // Met le nom du restaurant dans le formulaire de réservation
+                const restaurantNameInput = document.getElementById("restaurant-name") as HTMLInputElement;
+                if (restaurantNameInput) {
+                    restaurantNameInput.value = resto.nom;
+                }
+            });
         });
     }
 
@@ -120,3 +144,17 @@ function updateMap() {
 }
 
 (window as any).updateMap = updateMap; // Expose la fonction updateMap pour qu'elle puisse être appelée depuis le HTML
+
+(window as any).cacherAction = function () {
+    // Cache le formulaire de réservation
+    const reservationForm = document.getElementById("reservation-form");
+    if (reservationForm) {
+        reservationForm.style.display = "none";
+    }
+
+    // Affiche la div de filtre
+    const filtresDiv = document.getElementById("filtres");
+    if (filtresDiv) {
+        filtresDiv.style.display = "block";
+    }
+};

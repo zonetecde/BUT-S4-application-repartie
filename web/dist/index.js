@@ -116,6 +116,21 @@
       restaurants.forEach((resto) => {
         const marker = L.marker([resto.lat, resto.lon], { icon: foodIcon }).addTo(map);
         marker.bindPopup(`<b>${resto.nom}</b><br>Adresse : ${resto.adresse}`);
+        marker.on("click", (event) => {
+          console.log("Restaurant cliqu\xE9 :", resto.nom, event);
+          const filtresDiv = document.getElementById("filtres");
+          if (filtresDiv) {
+            filtresDiv.style.display = "none";
+          }
+          const reservationForm = document.getElementById("reservation-form");
+          if (reservationForm) {
+            reservationForm.style.display = "block";
+          }
+          const restaurantNameInput = document.getElementById("restaurant-name");
+          if (restaurantNameInput) {
+            restaurantNameInput.value = resto.nom;
+          }
+        });
       });
     }
     const filtreIncident = document.getElementById("filtre-incident").checked;
@@ -134,5 +149,15 @@
     }
   }
   window.updateMap = updateMap;
+  window.cacherAction = function() {
+    const reservationForm = document.getElementById("reservation-form");
+    if (reservationForm) {
+      reservationForm.style.display = "none";
+    }
+    const filtresDiv = document.getElementById("filtres");
+    if (filtresDiv) {
+      filtresDiv.style.display = "block";
+    }
+  };
 })();
 //# sourceMappingURL=index.js.map
