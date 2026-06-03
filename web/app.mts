@@ -1,6 +1,6 @@
 import { recupererVelibsNancy, StationVelib } from "./velibs.js";
 import { Incident, recupererIncidentsNancy } from "./incidents.js";
-import { recupererRestoNancy } from "./restaurants.js";
+import { recupererRestoNancy, RestaurantResponse } from "./restaurants.js";
 
 // On commence par récupérer les coordonnées de Nancy via l'API https://adresse.data.gouv.fr/outils/api-doc/adresse
 const url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
@@ -10,7 +10,7 @@ declare const L: any;
 
 let incidents: Incident[] = [];
 let velibs: StationVelib[] = [];
-let restaurants: Awaited<ReturnType<typeof recupererRestoNancy>> = [];
+let restaurants: RestaurantResponse[] = [];
 let map: any; // Carte Leaflet
 
 // On fetch la réponse de l'API
@@ -68,6 +68,7 @@ function updateMap() {
         // On met un emoji de vélo pour les stations de velibs
         const bikeIcon = L.divIcon({
             html: '<div style="font-size: 24px; text-align: center;">🚲</div>',
+            className: "",
             iconSize: [24, 24],
             iconAnchor: [12, 12],
             popupAnchor: [0, -12],
@@ -85,6 +86,7 @@ function updateMap() {
     if (filtreRestaurant) {
         const foodIcon = L.divIcon({
             html: '<div style="font-size: 24px; text-align: center;">🍽️</div>',
+            className: "",
             iconSize: [24, 24],
             iconAnchor: [12, 12],
             popupAnchor: [0, -12],
@@ -104,6 +106,7 @@ function updateMap() {
         // On met un emoji de warning pour les incidents
         const warningIcon = L.divIcon({
             html: '<div style="font-size: 24px; text-align: center;">⚠️</div>',
+            className: "",
             iconSize: [24, 24],
             iconAnchor: [12, 12],
             popupAnchor: [0, -12],

@@ -50,9 +50,8 @@
     const url2 = "http://localhost:8081/api/restaurants/coordonnees";
     const response = await fetch(url2);
     const dataResto = await response.json();
-    console.log(response, dataResto);
     const restaurants2 = dataResto.data.map((resto) => ({
-      id: resto.idRestaurant,
+      idRestaurant: resto.idRestaurant,
       nom: resto.nom,
       adresse: resto.adresse,
       lat: resto.lat,
@@ -95,6 +94,7 @@
     if (filtreVelib) {
       const bikeIcon = L.divIcon({
         html: '<div style="font-size: 24px; text-align: center;">\u{1F6B2}</div>',
+        className: "",
         iconSize: [24, 24],
         iconAnchor: [12, 12],
         popupAnchor: [0, -12]
@@ -108,6 +108,7 @@
     if (filtreRestaurant) {
       const foodIcon = L.divIcon({
         html: '<div style="font-size: 24px; text-align: center;">\u{1F37D}\uFE0F</div>',
+        className: "",
         iconSize: [24, 24],
         iconAnchor: [12, 12],
         popupAnchor: [0, -12]
@@ -121,6 +122,7 @@
     if (filtreIncident) {
       const warningIcon = L.divIcon({
         html: '<div style="font-size: 24px; text-align: center;">\u26A0\uFE0F</div>',
+        className: "",
         iconSize: [24, 24],
         iconAnchor: [12, 12],
         popupAnchor: [0, -12]
