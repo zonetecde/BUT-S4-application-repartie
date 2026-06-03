@@ -114,9 +114,9 @@ function updateMap() {
                 }
 
                 // Met le nom du restaurant dans le formulaire de réservation
-                const restaurantNameInput = document.getElementById("restaurant-name") as HTMLInputElement;
+                const restaurantNameInput = document.getElementById("restaurant-name") as HTMLSpanElement;
                 if (restaurantNameInput) {
-                    restaurantNameInput.value = resto.nom;
+                    restaurantNameInput.innerText = resto.nom;
                 }
             });
         });
