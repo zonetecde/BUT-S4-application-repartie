@@ -100,7 +100,7 @@ public class InitDataBase {
     public static void executeTable(Statement stmt, String table, String nomTable) throws SQLException {
         try {
             stmt.execute(table);
-            System.out.println("Table" + nomTable + " créée");
+            System.out.println("Table " + nomTable + " créée");
         } catch (SQLException e) {
             if (e.getErrorCode() == 955) {
                 // Si on a une exception c'est très certainement car la table a déjà été créée.
@@ -187,6 +187,43 @@ public class InitDataBase {
         } catch (SQLException e) {
             System.err.println("Erreur lors des insertions dans la table Plat : " + e.getMessage());
         }
+    }
 
+
+    /**
+     * Ajout des entrées de test dans la table Table si elle est vide.
+     * @param connection connexion JDBC à la base de données
+     */
+    public static void creerEntreesTable(Connection connection) {
+        String nbInsertion = "SELECT COUNT(*) FROM Table_Resto";
+        try (Statement stmt = connection.createStatement();
+            ResultSet rs = stmt.executeQuery(nbInsertion)) {
+            
+            if (rs.next()) {
+                int count = rs.getInt(1);
+
+                if (count == 0) {
+                    System.out.println("Table Table_Resto vide --> Insertion des données");
+
+                    String table1 = "INSERT INTO Table_Resto (idRestaurant, reservee, nbPlaces) VALUES (1, 0, 2)"; // Table de 2 personnes au Grand Café Foy (libre)
+                    String table2 = "INSERT INTO Table_Resto (idRestaurant, reservee, nbPlaces) VALUES (1, 0, 4)"; // Table de 4 personnes au Grand Café Foy (libre)
+                    String table3 = "INSERT INTO Table_Resto (idRestaurant, reservee, nbPlaces) VALUES (2, 0, 6)"; // Table de 6 personnes au Bouche à Oreille (libre)
+                    String table4 = "INSERT INTO Table_Resto (idRestaurant, reservee, nbPlaces) VALUES (4, 0, 4)"; // Table de 4 personnes à L'Excelsior (libre)
+                    String table5 = "INSERT INTO Table_Resto (idRestaurant, reservee, nbPlaces) VALUES (4, 0, 2)"; // Table de 2 personnes à L'Excelsior (libre)
+
+                    stmt.execute(table1);
+                    stmt.execute(table2);
+                    stmt.execute(table3);
+                    stmt.execute(table4);
+                    stmt.execute(table5);
+
+                    System.out.println("Insertion finie");
+                } else {
+                    System.out.println("La table Table_Resto contient déjà des données");
+                }
+            } 
+        } catch (SQLException e) {
+            System.err.println("Erreur lors des insertions dans la table Table_Resto : " + e.getMessage());
+        }
     }
 }

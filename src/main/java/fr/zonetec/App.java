@@ -21,6 +21,7 @@ public class App {
             InitDataBase.creerTables(connection);
             InitDataBase.creerEntreesRestaurant(connection);
             InitDataBase.creerEntreesPlat(connection);
+            InitDataBase.creerEntreesTable(connection);
         } catch (SQLException e) {
             System.err.println("Erreur, impossible de se connecter ou d'initialiser la base de données");
             return;
