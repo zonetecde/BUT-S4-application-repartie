@@ -126,9 +126,9 @@
           if (reservationForm) {
             reservationForm.style.display = "block";
           }
-          const restaurantNameInput = document.getElementById("restaurant-name");
-          if (restaurantNameInput) {
-            restaurantNameInput.innerText = resto.nom;
+          const restaurantName = document.getElementById("restaurant-name");
+          if (restaurantName) {
+            restaurantName.innerText = resto.nom;
           }
         });
       });
@@ -149,7 +149,7 @@
     }
   }
   window.updateMap = updateMap;
-  window.cacherAction = function() {
+  window.cacherActions = function() {
     const reservationForm = document.getElementById("reservation-form");
     if (reservationForm) {
       reservationForm.style.display = "none";

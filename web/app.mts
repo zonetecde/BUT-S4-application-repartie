@@ -114,9 +114,9 @@ function updateMap() {
                 }
 
                 // Met le nom du restaurant dans le formulaire de réservation
-                const restaurantNameInput = document.getElementById("restaurant-name") as HTMLSpanElement;
-                if (restaurantNameInput) {
-                    restaurantNameInput.innerText = resto.nom;
+                const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
+                if (restaurantName) {
+                    restaurantName.innerText = resto.nom;
                 }
             });
         });
@@ -145,7 +145,7 @@ function updateMap() {
 
 (window as any).updateMap = updateMap; // Expose la fonction updateMap pour qu'elle puisse être appelée depuis le HTML
 
-(window as any).cacherAction = function () {
+(window as any).cacherActions = function () {
     // Cache le formulaire de réservation
     const reservationForm = document.getElementById("reservation-form");
     if (reservationForm) {
