@@ -1,4 +1,5 @@
 import { recupererVelibsNancy } from "./velibs.js";
+import { Incident, recupererIncidentsNancy } from "./incidents.js";
 
 // On commence par récupérer les coordonnées de Nancy via l'API https://adresse.data.gouv.fr/outils/api-doc/adresse
 const url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
@@ -27,10 +28,16 @@ fetch(url)
 
         // On récupère maintenant les informations sur les stations de velibs à Nancy
         const stations = await recupererVelibsNancy();
-
         // Ajoute les stations sur la carte
         stations.forEach((station) => {
             const marker = L.marker([station.lat, station.lon]).addTo(map);
             marker.bindPopup(`<b>${station.nom}</b><br>Adresse : ${station.adresse}<br>Vélos disponibles : ${station.velosDisponibles}<br>Places de parking libres : ${station.placesVoitureDisponibles}`);
+        });
+
+        // Ajoute les incidents sur la carte
+        const incidents = await recupererIncidentsNancy();
+        incidents.forEach((incident: Incident) => {
+            const marker = L.marker([incident.lat, incident.lon]).addTo(map);
+            marker.bindPopup(`<b>${incident.type}</b><br>Description : ${incident.description}`);
         });
     });
