@@ -1,8 +1,14 @@
 import { recupererVelibsNancy, StationVelib } from "./velibs.js";
 import { Incident, recupererIncidentsNancy } from "./incidents.js";
-import { recupererRestoNancy, RestaurantResponse } from "./restaurants.js";
+import { recupererRestoNancy, RestaurantResponse, recupererTablesRestaurant, reserverTableRestaurant } from "./restaurants.js";
 import { recupererCrousNancy, chargerMenu, Restaurant as RestaurantCrous } from "./crous.js";
 import { recupererPointsGeo, ajouterPointGeo, PointGeo } from "./points.js";
+
+// Demande l'adresse du proxy au démarrage
+const proxyHost = prompt("Adresse IP du proxy HTTP ?", "localhost");
+const proxyPort = prompt("Port du proxy HTTP ?", "8081");
+// Par défaut c'est localhost 8081
+const proxyUrl = `http://${proxyHost || "localhost"}:${proxyPort || "8081"}`;
 
 // On commence par récupérer les coordonnées de Nancy via l'API https://adresse.data.gouv.fr/outils/api-doc/adresse
 const url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
@@ -18,6 +24,7 @@ let points: PointGeo[] = [];
 let map: any; // Carte Leaflet
 let addPointMode: boolean = false;
 let selectedEmoji: string = "📍";
+let positionActuelMarker: any = null; // Marker de la position utilisateur actuelle
 
 // On fetch la réponse de l'API
 fetch(url)
@@ -43,25 +50,25 @@ fetch(url)
             velibs = await recupererVelibsNancy();
 
             // On récupère les restaurants du CROUS à Nancy (bonus)
-            crous = await recupererCrousNancy();
+            crous = await recupererCrousNancy(proxyUrl);
 
             // On récupère les informations sur les restaurants à Nancy
-            restaurants = await recupererRestoNancy();
+            restaurants = await recupererRestoNancy(proxyUrl);
 
-            // Et on récupère aussi les incidents à Nancy
-            incidents = await recupererIncidentsNancy();
+            // Et on récupère aussi les incidents à Nancy (via le proxy)
+            incidents = await recupererIncidentsNancy(proxyUrl);
 
-            // On récupère les points géographiques personnalisés
-            points = await recupererPointsGeo();
+            // On récupère les points géographiques personnalisés (via le proxy)
+            points = await recupererPointsGeo(proxyUrl);
         } catch (error: any) {
-            // C'est un catch controllé : quand on travail sur nos machines,
-            // recupererIncidentsNancy ne fonctionne pas car on a pas accès au proxy
-            // java.
             console.error("Erreur lors de la récupération des données :", error);
         }
 
         // Affiche la carte
         updateMap();
+
+        // Demande la position de l'utilisateur pour l'afficher sur la carte
+        localiserUtilisateur();
     });
 
 /**
@@ -81,10 +88,33 @@ function afficherPanneau(panelId: string): void {
     if (panel) panel.style.display = "block";
 }
 
+function localiserUtilisateur() {
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
+
+            const userIcon = L.divIcon({
+                html: '<div style="width: 28px; height: 28px; font-size: 16px; line-height: 24px; text-align: center; background: #dbeafe; border: 2px solid #2563eb; border-radius: 50%;">🧑</div>',
+                className: "",
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                popupAnchor: [0, -14],
+            });
+
+            positionActuelMarker = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
+            positionActuelMarker.bindPopup("<b>Vous êtes ici</b>");
+            positionActuelMarker.openPopup();
+        },
+        (error) => {
+            console.log("Veuillez autoriser la géolocalisation pour afficher votre position sur la carte." + error);
+        }
+    );
+}
+
 function updateMap() {
     // Clear tous les markers de la carte avant de les réafficher
     map.eachLayer((layer: any) => {
-        if (layer instanceof L.Marker) {
+        if (layer instanceof L.Marker && layer !== positionActuelMarker) {
             map.removeLayer(layer);
         }
     });
@@ -137,6 +167,12 @@ function updateMap() {
                 if (restaurantName) {
                     restaurantName.innerText = resto.nom;
                 }
+
+                const tablesDiv = document.getElementById("tables-dispo");
+                if (tablesDiv) {
+                    tablesDiv.innerHTML = "";
+                    tablesDiv.classList.add("hidden");
+                }
             });
         });
     }
@@ -168,7 +204,7 @@ function updateMap() {
                 }
 
                 try {
-                    const menu = await chargerMenu(restoCrous.code);
+                    const menu = await chargerMenu(proxyUrl, restoCrous.code);
                     const menuContent = document.getElementById("menu-content");
                     if (menuContent) {
                         menuContent.innerText = menu.menu || "Aucun menu disponible.";
@@ -278,7 +314,7 @@ function handleMapClick(event: any): void {
     const lat = (window as any).currentLat;
     const lon = (window as any).currentLon;
 
-    const newPoint = await ajouterPointGeo(lon, lat, selectedEmoji, titre, description);
+    const newPoint = await ajouterPointGeo(proxyUrl, lon, lat, selectedEmoji, titre, description);
 
     if (newPoint) {
         points.push(newPoint);
@@ -319,18 +355,117 @@ function handleMapClick(event: any): void {
 /**
  * Change l'emoji sélectionné
  */
-(window as any).changeEmoji = function (emoji: string) { 
-    selectedEmoji = emoji; 
-    
-    const emojiButtons = document.querySelectorAll<HTMLButtonElement>(".emoji-btn"); 
-    
+(window as any).changeEmoji = function (emoji: string) {
+    selectedEmoji = emoji;
+
+    const emojiButtons = document.querySelectorAll<HTMLButtonElement>(".emoji-btn");
+
     emojiButtons.forEach((btn) => {
-        if (btn.textContent?.trim() === emoji) { 
-            btn.classList.add("border-4", "border-blue-600"); 
-            btn.classList.remove("border-2", "border-blue-300"); 
-        } else { 
-            btn.classList.remove("border-4", "border-blue-600"); 
-            btn.classList.add("border-2", "border-blue-300"); 
-        } 
-    }); 
+        if (btn.textContent?.trim() === emoji) {
+            btn.classList.add("border-4", "border-blue-600");
+            btn.classList.remove("border-2", "border-blue-300");
+        } else {
+            btn.classList.remove("border-4", "border-blue-600");
+            btn.classList.add("border-2", "border-blue-300");
+        }
+    });
+};
+
+(window as any).afficherTablesDisponibles = async function () {
+    const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
+    const tablesDiv = document.getElementById("tables-dispo");
+
+    if (!restaurantName || !tablesDiv) return;
+
+    const nomRestaurant = restaurantName.innerText;
+
+    tablesDiv.innerHTML = "Chargement des tables disponibles...";
+    tablesDiv.classList.remove("hidden");
+
+    try {
+        const tables = await recupererTablesRestaurant(nomRestaurant);
+
+        if (tables.length === 0) {
+            tablesDiv.innerHTML = "Aucune table disponible.";
+            return;
+        }
+
+        tablesDiv.innerHTML = tables
+            .map(
+                (table) => `
+        <button
+            class="w-full text-left border-b border-blue-300 py-2 hover:bg-blue-200"
+            onclick="selectionnerTable(${table.idTable}, ${table.nbPlaces})"
+        >
+            <strong>Table ${table.idTable}</strong> — ${table.nbPlaces} places
+        </button>
+    `
+            )
+            .join("");
+    } catch (error: any) {
+        tablesDiv.innerHTML = error.message;
+    }
+};
+
+(window as any).validerReservation = async function (idTable: number) {
+    const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
+
+    const nom = (document.getElementById("nom-reservation") as HTMLInputElement).value;
+    const prenom = (document.getElementById("prenom-reservation") as HTMLInputElement).value;
+    const telephone = (document.getElementById("tel-reservation") as HTMLInputElement).value;
+    const dateInput = (document.getElementById("date-reservation") as HTMLInputElement).value;
+    const nombreConvives = Number((document.getElementById("convives-reservation") as HTMLInputElement).value);
+
+    if (!nom || !prenom || !telephone || !dateInput || !nombreConvives) {
+        alert("Veuillez remplir tous les champs.");
+        return;
+    }
+
+    const dateHeure = dateInput.replace("T", " ") + ":00";
+
+    const resultat = await reserverTableRestaurant({
+        nomRestaurant: restaurantName.innerText,
+        idTable: idTable,
+        dateHeure: dateHeure,
+        nom: nom,
+        prenom: prenom,
+        nombreConvives: nombreConvives,
+        telephone: telephone,
+    });
+
+    alert(resultat.message);
+
+    if (resultat.succes || resultat.success) {
+        (window as any).cacherActions();
+    }
+};
+
+(window as any).selectionnerTable = function (idTable: number, nbPlaces: number) {
+    const tablesDiv = document.getElementById("tables-dispo");
+
+    if (!tablesDiv) return;
+
+    tablesDiv.innerHTML = `
+        <p class="mb-2"><strong>Table ${idTable}</strong> sélectionnée — ${nbPlaces} places</p>
+
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="nom-reservation" placeholder="Nom" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="prenom-reservation" placeholder="Prénom" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="tel-reservation" placeholder="Téléphone" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="date-reservation" type="datetime-local" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="convives-reservation" type="number" min="1" max="${nbPlaces}" placeholder="Nombre de convives" />
+
+        <button
+            class="bg-green-200 px-3 py-1 rounded border-2 border-green-400 mt-2 cursor-pointer"
+            onclick="validerReservation(${idTable})"
+        >
+            Valider la réservation
+        </button>
+
+        <button
+            class="bg-gray-200 px-3 py-1 rounded border-2 border-gray-400 mt-2 ml-2 cursor-pointer"
+            onclick="afficherTablesDisponibles()"
+        >
+            Choisir une autre table
+        </button>
+    `;
 };

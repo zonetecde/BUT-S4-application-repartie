@@ -24,8 +24,8 @@
   }
 
   // incidents.ts
-  async function recupererIncidentsNancy() {
-    const resp = await fetch("http://localhost:8081/api/fetch?url=https://carto.g-ny.eu/data/cifs/cifs_waze_v2.json");
+  async function recupererIncidentsNancy(proxyUrl2) {
+    const resp = await fetch(`${proxyUrl2}/api/fetch?url=https://carto.g-ny.eu/data/cifs/cifs_waze_v2.json`);
     const respData = await resp.json();
     if (!respData.success) {
       console.error("Erreur lors de la r\xE9cup\xE9ration des incidents :", respData.error);
@@ -46,10 +46,14 @@
   }
 
   // restaurants.ts
-  async function recupererRestoNancy() {
-    const url2 = "http://localhost:8081/api/restaurants/coordonnees";
+  async function recupererRestoNancy(proxyUrl2) {
+    const url2 = `${proxyUrl2}/api/restaurants/coordonnees`;
     const response = await fetch(url2);
     const dataResto = await response.json();
+    if (!dataResto.success) {
+      console.error("Erreur lors de la r\xE9cup\xE9ration des restaurants :", dataResto.message);
+      return [];
+    }
     const restaurants2 = dataResto.data.map((resto) => ({
       idRestaurant: resto.idRestaurant,
       nom: resto.nom,
@@ -59,56 +63,68 @@
     }));
     return restaurants2;
   }
+  async function recupererTablesRestaurant(nomRestaurant) {
+    const url2 = `http://localhost:8081/api/restaurants/tables?nomRestaurant=${encodeURIComponent(nomRestaurant)}`;
+    const response = await fetch(url2);
+    const json = await response.json();
+    if (!json.success && !json.succes) {
+      throw new Error(json.message);
+    }
+    return Object.entries(json.data).map(([idTable, nbPlaces]) => ({
+      idTable: Number(idTable),
+      nbPlaces: Number(nbPlaces)
+    }));
+  }
+  async function reserverTableRestaurant(data) {
+    const params = new URLSearchParams();
+    params.append("nomRestaurant", data.nomRestaurant);
+    params.append("idTable", String(data.idTable));
+    params.append("dateHeure", data.dateHeure);
+    params.append("nom", data.nom);
+    params.append("prenom", data.prenom);
+    params.append("nombreConvives", String(data.nombreConvives));
+    params.append("telephone", data.telephone);
+    const response = await fetch(`http://localhost:8081/api/restaurants/reserver?${params.toString()}`, {
+      method: "POST"
+    });
+    const text = await response.text();
+    console.log("R\xE9ponse r\xE9servation :", text);
+    return JSON.parse(text);
+  }
 
   // crous.ts
-  async function recupererCrousNancy() {
-    const url2 = "https://api.croustillant.menu/v1/regions";
+  async function recupererCrousNancy(proxyUrl2) {
+    const url2 = `${proxyUrl2}/api/crous/restaurants?ville=Nancy`;
     const response = await fetch(url2);
-    const dataRegions = await response.json();
-    const regionNancy = dataRegions.data.find((region) => region.libelle.toLowerCase().includes("nancy"));
-    if (!regionNancy) {
-      console.error("R\xE9gion Nancy non trouv\xE9e");
+    const dataResto = await response.json();
+    if (!dataResto.success) {
+      console.error("Erreur lors de la r\xE9cup\xE9ration des restaurants CROUS :", dataResto.message);
       return [];
     }
-    const codeNancy = regionNancy.code;
-    const urlResto = `https://api.croustillant.menu/v1/regions/${codeNancy}/restaurants`;
-    const responseResto = await fetch(urlResto);
-    const dataResto = await responseResto.json();
     return dataResto.data;
   }
-  async function chargerMenu(idRestaurant) {
-    const url2 = `https://api.croustillant.menu/v1/restaurants/${idRestaurant}/menu`;
+  async function chargerMenu(proxyUrl2, idRestaurant) {
+    const url2 = `${proxyUrl2}/api/crous/menu?idRestaurant=${idRestaurant}`;
     const response = await fetch(url2);
     const dataMenu = await response.json();
-    const jour = dataMenu.data[0];
-    const date = jour.date;
-    let menuStr = "";
-    for (const repas of jour.repas) {
-      const typeRepas = repas.type === "matin" ? "Matin" : "Soir";
-      menuStr += `${typeRepas}
-`;
-      for (const categorie of repas.categories) {
-        menuStr += `  ${categorie.libelle} :
-`;
-        for (const plat of categorie.plats) {
-          menuStr += `    - ${plat.libelle}
-`;
-        }
-      }
+    if (!dataMenu.success) {
+      console.error("Erreur lors du chargement du menu :", dataMenu.message);
+      return { date: "", menu: "Menu indisponible." };
     }
-    return {
-      date,
-      menu: menuStr
-    };
+    return dataMenu.data;
   }
 
   // app.mts
+  var proxyHost = prompt("Adresse IP du proxy HTTP ?", "localhost");
+  var proxyPort = prompt("Port du proxy HTTP ?", "8081");
+  var proxyUrl = `http://${proxyHost || "localhost"}:${proxyPort || "8081"}`;
   var url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
   var incidents = [];
   var velibs = [];
   var restaurants = [];
   var crous = [];
   var map;
+  var positionActuelMarker = null;
   fetch(url).then((response) => response.json()).then(async (data) => {
     const lon = data.features[0].geometry.coordinates[0];
     const lat = data.features[0].geometry.coordinates[1];
@@ -120,13 +136,14 @@
     }).addTo(map);
     try {
       velibs = await recupererVelibsNancy();
-      crous = await recupererCrousNancy();
-      restaurants = await recupererRestoNancy();
-      incidents = await recupererIncidentsNancy();
+      crous = await recupererCrousNancy(proxyUrl);
+      restaurants = await recupererRestoNancy(proxyUrl);
+      incidents = await recupererIncidentsNancy(proxyUrl);
     } catch (error) {
       console.error("Erreur lors de la r\xE9cup\xE9ration des donn\xE9es :", error);
     }
     updateMap();
+    localiserUtilisateur();
   });
   function afficherPanneau(panelId) {
     const panels = ["filtres", "reservation-form", "menu-crous"];
@@ -137,9 +154,29 @@
     const panel = document.getElementById(panelId);
     if (panel) panel.style.display = "block";
   }
+  function localiserUtilisateur() {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const userIcon = L.divIcon({
+          html: '<div style="width: 28px; height: 28px; font-size: 16px; line-height: 24px; text-align: center; background: #dbeafe; border: 2px solid #2563eb; border-radius: 50%;">\u{1F9D1}</div>',
+          className: "",
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+          popupAnchor: [0, -14]
+        });
+        positionActuelMarker = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
+        positionActuelMarker.bindPopup("<b>Vous \xEAtes ici</b>");
+        positionActuelMarker.openPopup();
+      },
+      (error) => {
+        console.log("Veuillez autoriser la g\xE9olocalisation pour afficher votre position sur la carte." + error);
+      }
+    );
+  }
   function updateMap() {
     map.eachLayer((layer) => {
-      if (layer instanceof L.Marker) {
+      if (layer instanceof L.Marker && layer !== positionActuelMarker) {
         map.removeLayer(layer);
       }
     });
@@ -176,6 +213,11 @@
           if (restaurantName) {
             restaurantName.innerText = resto.nom;
           }
+          const tablesDiv = document.getElementById("tables-dispo");
+          if (tablesDiv) {
+            tablesDiv.innerHTML = "";
+            tablesDiv.classList.add("hidden");
+          }
         });
       });
     }
@@ -198,7 +240,7 @@
             crousName.innerText = restoCrous.nom;
           }
           try {
-            const menu = await chargerMenu(restoCrous.code);
+            const menu = await chargerMenu(proxyUrl, restoCrous.code);
             const menuContent = document.getElementById("menu-content");
             if (menuContent) {
               menuContent.innerText = menu.menu || "Aucun menu disponible.";
@@ -237,6 +279,86 @@
   };
   window.cacherMenuCrous = function() {
     afficherPanneau("filtres");
+  };
+  window.afficherTablesDisponibles = async function() {
+    const restaurantName = document.getElementById("restaurant-name");
+    const tablesDiv = document.getElementById("tables-dispo");
+    if (!restaurantName || !tablesDiv) return;
+    const nomRestaurant = restaurantName.innerText;
+    tablesDiv.innerHTML = "Chargement des tables disponibles...";
+    tablesDiv.classList.remove("hidden");
+    try {
+      const tables = await recupererTablesRestaurant(nomRestaurant);
+      if (tables.length === 0) {
+        tablesDiv.innerHTML = "Aucune table disponible.";
+        return;
+      }
+      tablesDiv.innerHTML = tables.map(
+        (table) => `
+        <button
+            class="w-full text-left border-b border-blue-300 py-2 hover:bg-blue-200"
+            onclick="selectionnerTable(${table.idTable}, ${table.nbPlaces})"
+        >
+            <strong>Table ${table.idTable}</strong> \u2014 ${table.nbPlaces} places
+        </button>
+    `
+      ).join("");
+    } catch (error) {
+      tablesDiv.innerHTML = error.message;
+    }
+  };
+  window.validerReservation = async function(idTable) {
+    const restaurantName = document.getElementById("restaurant-name");
+    const nom = document.getElementById("nom-reservation").value;
+    const prenom = document.getElementById("prenom-reservation").value;
+    const telephone = document.getElementById("tel-reservation").value;
+    const dateInput = document.getElementById("date-reservation").value;
+    const nombreConvives = Number(document.getElementById("convives-reservation").value);
+    if (!nom || !prenom || !telephone || !dateInput || !nombreConvives) {
+      alert("Veuillez remplir tous les champs.");
+      return;
+    }
+    const dateHeure = dateInput.replace("T", " ") + ":00";
+    const resultat = await reserverTableRestaurant({
+      nomRestaurant: restaurantName.innerText,
+      idTable,
+      dateHeure,
+      nom,
+      prenom,
+      nombreConvives,
+      telephone
+    });
+    alert(resultat.message);
+    if (resultat.succes || resultat.success) {
+      window.cacherActions();
+    }
+  };
+  window.selectionnerTable = function(idTable, nbPlaces) {
+    const tablesDiv = document.getElementById("tables-dispo");
+    if (!tablesDiv) return;
+    tablesDiv.innerHTML = `
+        <p class="mb-2"><strong>Table ${idTable}</strong> s\xE9lectionn\xE9e \u2014 ${nbPlaces} places</p>
+
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="nom-reservation" placeholder="Nom" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="prenom-reservation" placeholder="Pr\xE9nom" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="tel-reservation" placeholder="T\xE9l\xE9phone" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="date-reservation" type="datetime-local" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="convives-reservation" type="number" min="1" max="${nbPlaces}" placeholder="Nombre de convives" />
+
+        <button
+            class="bg-green-200 px-3 py-1 rounded border-2 border-green-400 mt-2 cursor-pointer"
+            onclick="validerReservation(${idTable})"
+        >
+            Valider la r\xE9servation
+        </button>
+
+        <button
+            class="bg-gray-200 px-3 py-1 rounded border-2 border-gray-400 mt-2 ml-2 cursor-pointer"
+            onclick="afficherTablesDisponibles()"
+        >
+            Choisir une autre table
+        </button>
+    `;
   };
 })();
 //# sourceMappingURL=index.js.map

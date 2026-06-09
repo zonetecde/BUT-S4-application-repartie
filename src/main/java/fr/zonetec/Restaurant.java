@@ -63,6 +63,19 @@ public class Restaurant implements ServiceRestaurant {
                 return new Reponse(false, "Le restaurant n'existe pas", null);
             }
             int idRest = rs.getInt("idRestaurant");
+            st = conn.prepareStatement(
+                    "SELECT idTable FROM Table_Resto " +
+                            "WHERE idRestaurant = ? AND idTable = ? AND reservee = 0 " +
+                            "FOR UPDATE NOWAIT"
+            );
+            st.setInt(1, idRest);
+            st.setInt(2, idTable);
+            rs = st.executeQuery();
+
+            if (!rs.next()) {
+                conn.rollback();
+                return new Reponse(false, "Cette table n'existe pas ou n'est plus disponible", null);
+            }
 
             // Vérifie que la table existe et qu'elle a assez de places
             st = conn.prepareStatement(
@@ -97,18 +110,36 @@ public class Restaurant implements ServiceRestaurant {
                 conn.rollback();
                 return new Reponse(false, "Impossible d'ajouter la réservation", null);
             }
+            st = conn.prepareStatement(
+                    "UPDATE Table_Resto " +
+                            "SET reservee = 1 " +
+                            "WHERE idRestaurant = ? AND idTable = ?"
+            );
+
+            st.setInt(1, idRest);
+            st.setInt(2, idTable);
+
+            int updatedRows = st.executeUpdate();
+
+            if (updatedRows == 0) {
+                conn.rollback();
+                return new Reponse(false, "Impossible de mettre la table en réservation", null);
+            }
             conn.commit();
             return new Reponse(true, "La réservation a été ajoutée", true);
-        } catch (IllegalArgumentException e) {
-            return new Reponse(false, "Date de réservation invalide", null);
         } catch (SQLException e) {
-            try {
-                conn.rollback();
-                return new Reponse(false, "Erreur lors de la réservation", null);
-            } catch (SQLException ex) {
-                return new Reponse(false, "Erreur lors du rollback", null);
+        try {
+            conn.rollback();
+
+            if (e.getErrorCode() == 54) {
+                return new Reponse(false, "Cette table est déjà en cours de réservation par un autre client", null);
             }
+            e.printStackTrace();
+            return new Reponse(false, "Erreur SQL : " + e.getMessage(), null);
+        } catch (SQLException ex) {
+            return new Reponse(false, "Erreur lors du rollback", null);
         }
+    }
     }
 
     /**
@@ -133,7 +164,7 @@ public class Restaurant implements ServiceRestaurant {
                     "SELECT t.idTable, t.nbPlaces " +
                             "FROM Table_Resto t " +
                             "JOIN Restaurant r ON t.idRestaurant = r.idRestaurant " +
-                            "WHERE r.nom = ? AND t.reservee = 0 FOR UPDATE NOWAIT" // Mot clé nowait comme ça si c'est lock par une autre demande on attend pas
+                            "WHERE r.nom = ? AND t.reservee = 0"
             );
             st.setString(1, nomRestaurant);
             rs = st.executeQuery();

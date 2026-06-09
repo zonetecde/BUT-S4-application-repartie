@@ -4,12 +4,12 @@
 
 -   Java version 17
 -   Maven sur la machine utilisée pour compiler
--   accès au réseau de l'IUT
--   accès à la base de données Oracle
+-   Accès au réseau de l'IUT
+-   Accès à la base de données Oracle (pour le service Restaurant)
 
 Il faut renseigner les paramètres de connexion à la base de données dans un fichier `.env`. Un exemple de contenu est donné dans le fichier `.env.example`.
 
-## Compilation du serveur
+## Compilation
 
 Depuis une machine avec Maven installé, exécuter depuis la racine du projet :
 
@@ -23,57 +23,82 @@ Le fichier généré est :
 target/restaurant-rmi-server.jar
 ```
 
-## Lancement du serveur sur une machine de l'IUT
+Copier ce `.jar` et le fichier `.env` sur **toutes** les machines qui vont héberger un service.
 
-Comme Maven n'est pas disponible sur la machine de l'IUT, il faut copier au minimum ces fichiers sur la machine :
+---
 
-```text
-restaurant-rmi-server.jar
-.env
-```
-
-Les deux fichiers doivent être dans le même dossier. Depuis ce dossier, lancer :
+# Sur chaque machine, avant de lancer le programme faire :
 
 ```bash
-export CLASSPATH=restaurant-rmi-server.jar
-rmiregistry 1099 &
-java -jar restaurant-rmi-server.jar
+CLASSPATH="target/classes:target/restaurant-rmi-server.jar" rmiregistry 1099 &
 ```
 
-Si le projet complet est présent sur la machine de l'IUT, il est aussi possible de lancer depuis la racine du projet :
+## Machine A - Service Restaurant
+
+Le service Restaurant a besoin d'un accès à la base de données Oracle (fichier `.env` à placer dans le dossier courant).
 
 ```bash
-cd target
-export CLASSPATH=restaurant-rmi-server.jar
-rmiregistry 1099 &
-java -jar restaurant-rmi-server.jar
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerRestaurant
 ```
 
-## Lancement du proxy HTTP
-
-Le proxy HTTP doit être lancé après le serveur RMI.
-Il permet d'exposer les services RMI via une API REST, ce qui permet au site internet
-d'accéder aux services RMI.
-Depuis la racine du projet, exécuter :
+## Machine B - Service Fetch
 
 ```bash
-java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur localhost 1099 8081
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerFetch
 ```
 
-Les arguments correspondent à l'hôte RMI (donc localhost vu que les services sont sur la même machine), au port RMI, puis au port HTTP du proxy (on l'expose sur le port 8081). Si le serveur RMI est sur une autre machine, il faut remplacer `localhost` par son adresse IP.
-
-## Lancement du client de test
-
-Depuis la racine du projet, lancer :
+## Machine C - Service Crous
 
 ```bash
-javac -cp "target/restaurant-rmi-server.jar" -d target/client client/RestaurantClient.java && java -cp "target/client:target/restaurant-rmi-server.jar" RestaurantClient localhost 1099
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerCrous
 ```
 
-`localhost` fonctionne uniquement si le client est lancé sur la même machine que le serveur. Si le serveur est sur une autre machine, remplacer `localhost` par l'adresse IP du serveur :
+---
+
+## Machine C - Service Crous
 
 ```bash
-javac -cp "target/restaurant-rmi-server.jar" -d target/client client/RestaurantClient.java && java -cp "target/client:target/restaurant-rmi-server.jar" RestaurantClient IP_DU_SERVEUR 1099
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerCrous
 ```
 
-On devrait voir apparaître les réponses JSON des différentes requêtes faites au service RMI.
+---
+
+## Machine D - Proxy HTTP
+
+Le proxy HTTP doit être lancé **après** les trois services RMI.
+
+```bash
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur \
+    8081 \
+    <IP_RESTAURANT> 1099 \
+    <IP_CROUS> 1099 \
+    <IP_FETCH> 1099
+```
+
+Les 7 arguments sont :
+
+| #   | Paramètre       | Défaut      | Description                     |
+| --- | --------------- | ----------- | ------------------------------- |
+| 1   | Port HTTP       | `8081`      | Port d'exposition de l'API REST |
+| 2   | Hôte Restaurant | `localhost` | IP de la machine A              |
+| 3   | Port Restaurant | `1099`      | Port RMI de la machine A        |
+| 4   | Hôte Crous      | `localhost` | IP de la machine C              |
+| 5   | Port Crous      | `1099`      | Port RMI de la machine C        |
+| 6   | Hôte Fetch      | `localhost` | IP de la machine B              |
+| 7   | Port Fetch      | `1099`      | Port RMI de la machine B        |
+
+### Avec tout sur la même machine :
+
+```bash
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur 8081 localhost 1099 localhost 1099 localhost 1099
+```
+
+---
+
+## Client de test
+
+Depuis la racine du projet :
+
+```bash
+javac -cp "target/restaurant-rmi-server.jar" -d target/client client/RestaurantClient.java && java -cp "target/client:target/restaurant-rmi-server.jar" RestaurantClient <IP_RESTAURANT> 1099
+```

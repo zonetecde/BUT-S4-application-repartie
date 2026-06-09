@@ -11,28 +11,17 @@ export interface PointGeo {
 }
 
 /**
- * Récupère tous les points géographiques via le service RMI
+ * Récupère tous les points géographiques via le proxy
  */
-export async function recupererPointsGeo(): Promise<PointGeo[]> {
+export async function recupererPointsGeo(proxyUrl: string): Promise<PointGeo[]> {
     try {
-        const response = await fetch("http://localhost:8080/ProxyServeur", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                service: "point",
-                method: "recupererTousLesPoints",
-                params: [],
-            }),
-        });
-
+        const response = await fetch(`${proxyUrl}/api/points/list`);
         const data = await response.json();
-        
+
         if (data.success) {
-            return data.result || [];
+            return data.data || [];
         } else {
-            console.error("Erreur lors de la récupération des points:", data.error);
+            console.error("Erreur lors de la récupération des points :", data.message);
             return [];
         }
     } catch (error: any) {
@@ -42,9 +31,10 @@ export async function recupererPointsGeo(): Promise<PointGeo[]> {
 }
 
 /**
- * Ajoute un nouveau point géographique
+ * Ajoute un nouveau point géographique via le proxy
  */
 export async function ajouterPointGeo(
+    proxyUrl: string,
     coordonneesX: number,
     coordonneesY: number,
     emoji: string,
@@ -52,25 +42,21 @@ export async function ajouterPointGeo(
     description: string
 ): Promise<PointGeo | null> {
     try {
-        const response = await fetch("http://localhost:8080/ProxyServeur", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                service: "point",
-                method: "ajouterPoint",
-                params: [coordonneesX, coordonneesY, emoji, titre, description],
-            }),
+        const params = new URLSearchParams({
+            x: String(coordonneesX),
+            y: String(coordonneesY),
+            emoji,
+            titre,
+            description,
         });
-
+        const response = await fetch(`${proxyUrl}/api/points/add?${params}`, { method: "POST" });
         const data = await response.json();
 
         if (data.success) {
-            console.log("Point ajouté :", data.result);
-            return data.result;
+            console.log("Point ajouté");
+            return data.data;
         } else {
-            console.error("Erreur lors de l'ajout du point:", data.error);
+            console.error("Erreur lors de l'ajout du point :", data.message);
             return null;
         }
     } catch (error: any) {
@@ -78,26 +64,6 @@ export async function ajouterPointGeo(
         return null;
     }
 }
-
-/**
- * Supprime un point géographique
- */
-export async function supprimerPointGeo(idPoint: number): Promise<boolean> {
-    try {
-        const response = await fetch("http://localhost:8080/ProxyServeur", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                service: "point",
-                method: "supprimerPoint",
-                params: [idPoint],
-            }),
-        });
-
-        const data = await response.json();
-        return data.success;
     } catch (error: any) {
         console.error("Erreur lors de l'appel au proxy :", error);
         return false;
