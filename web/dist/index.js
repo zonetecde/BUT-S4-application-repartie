@@ -91,6 +91,14 @@
     console.log("R\xE9ponse r\xE9servation :", text);
     return JSON.parse(text);
   }
+  async function recupererReservations() {
+    const response = await fetch("http://localhost:8081/api/restaurants/reservations");
+    const json = await response.json();
+    if (!json.success) {
+      throw new Error(json.message);
+    }
+    return json.data;
+  }
 
   // crous.ts
   async function recupererCrousNancy(proxyUrl2) {
@@ -359,6 +367,44 @@
             Choisir une autre table
         </button>
     `;
+  };
+  window.afficherAdminPanel = async function() {
+    const filtresDiv = document.getElementById("filtres");
+    const reservationForm = document.getElementById("reservation-form");
+    const adminPanel = document.getElementById("admin-panel");
+    const reservationsList = document.getElementById("reservations-list");
+    if (filtresDiv) filtresDiv.style.display = "none";
+    if (reservationForm) reservationForm.style.display = "none";
+    if (adminPanel) adminPanel.classList.remove("hidden");
+    if (!reservationsList) return;
+    reservationsList.innerHTML = "Chargement...";
+    try {
+      const reservations = await recupererReservations();
+      if (reservations.length === 0) {
+        reservationsList.innerHTML = "Aucune r\xE9servation.";
+        return;
+      }
+      reservationsList.innerHTML = reservations.map(
+        (reservation) => `
+                <div class="border-b border-blue-300 py-2">
+                    <p><strong>${reservation.nomRestaurant}</strong></p>
+                    <p>Table : ${reservation.idTable}</p>
+                    <p>Date : ${reservation.dateRes}</p>
+                    <p>Client : ${reservation.prenomClient} ${reservation.nomClient}</p>
+                    <p>Convives : ${reservation.nbConvives}</p>
+                    <p>T\xE9l\xE9phone : ${reservation.numTel}</p>
+                </div>
+            `
+      ).join("");
+    } catch (error) {
+      reservationsList.innerHTML = error.message;
+    }
+  };
+  window.cacherAdminPanel = function() {
+    const filtresDiv = document.getElementById("filtres");
+    const adminPanel = document.getElementById("admin-panel");
+    if (adminPanel) adminPanel.classList.add("hidden");
+    if (filtresDiv) filtresDiv.style.display = "block";
   };
 })();
 //# sourceMappingURL=index.js.map

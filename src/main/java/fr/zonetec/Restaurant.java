@@ -64,7 +64,7 @@ public class Restaurant implements ServiceRestaurant {
             }
             int idRest = rs.getInt("idRestaurant");
             st = conn.prepareStatement(
-                    "SELECT idTable FROM Table_Resto " +
+                    "SELECT nbPlaces FROM Table_Resto " +
                             "WHERE idRestaurant = ? AND idTable = ? AND reservee = 0 " +
                             "FOR UPDATE NOWAIT"
             );
@@ -75,6 +75,17 @@ public class Restaurant implements ServiceRestaurant {
             if (!rs.next()) {
                 conn.rollback();
                 return new Reponse(false, "Cette table n'existe pas ou n'est plus disponible", null);
+            }
+
+            int nbPlaces = rs.getInt("nbPlaces");
+
+            if (nombreConvives > nbPlaces) {
+                conn.rollback();
+                return new Reponse(false, "Le nombre de convives dépasse la capacité de la table", null);
+            }
+            if (nombreConvives <= 0) {
+                conn.rollback();
+                return new Reponse(false, "Le nombre de convives doit être supérieur à 0", null);
             }
 
             // Vérifie que la table existe et qu'elle a assez de places
@@ -190,6 +201,44 @@ public class Restaurant implements ServiceRestaurant {
             } catch (SQLException ex) {
                 return new Reponse(false, "Erreur lors du rollback", null);
             }
+        }
+    }
+
+    public Reponse recupererReservations() {
+        try {
+            ArrayList<HashMap<String, Object>> reservations = new ArrayList<>();
+
+            PreparedStatement st = conn.prepareStatement(
+                    "SELECT r.idRestaurant, r.nom AS nomRestaurant, " +
+                            "res.idReservation, res.idTable, res.dateRes, " +
+                            "res.nomClient, res.prenomClient, res.nbConvives, res.numTel " +
+                            "FROM Reservation res " +
+                            "JOIN Restaurant r ON res.idRestaurant = r.idRestaurant " +
+                            "ORDER BY res.dateRes DESC"
+            );
+
+            ResultSet rs = st.executeQuery();
+
+            while (rs.next()) {
+                HashMap<String, Object> reservation = new HashMap<>();
+
+                reservation.put("idRestaurant", rs.getInt("idRestaurant"));
+                reservation.put("nomRestaurant", rs.getString("nomRestaurant"));
+                reservation.put("idReservation", rs.getInt("idReservation"));
+                reservation.put("idTable", rs.getInt("idTable"));
+                reservation.put("dateRes", rs.getTimestamp("dateRes").toString());
+                reservation.put("nomClient", rs.getString("nomClient"));
+                reservation.put("prenomClient", rs.getString("prenomClient"));
+                reservation.put("nbConvives", rs.getInt("nbConvives"));
+                reservation.put("numTel", rs.getString("numTel"));
+
+                reservations.add(reservation);
+            }
+
+            return new Reponse(true, "Réservations récupérées", reservations);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return new Reponse(false, "Erreur lors de la récupération des réservations : " + e.getMessage(), null);
         }
     }
 

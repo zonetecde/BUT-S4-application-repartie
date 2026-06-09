@@ -1,6 +1,12 @@
 import { recupererVelibsNancy, StationVelib } from "./velibs.js";
 import { Incident, recupererIncidentsNancy } from "./incidents.js";
-import { recupererRestoNancy, RestaurantResponse, recupererTablesRestaurant, reserverTableRestaurant } from "./restaurants.js";
+import {
+    recupererRestoNancy,
+    RestaurantResponse,
+    recupererTablesRestaurant,
+    reserverTableRestaurant,
+    recupererReservations,
+} from "./restaurants.js";
 import { recupererCrousNancy, chargerMenu, Restaurant as RestaurantCrous } from "./crous.js";
 
 // Demande l'adresse du proxy au démarrage
@@ -344,4 +350,53 @@ function updateMap() {
             Choisir une autre table
         </button>
     `;
+};
+
+(window as any).afficherAdminPanel = async function () {
+    const filtresDiv = document.getElementById("filtres");
+    const reservationForm = document.getElementById("reservation-form");
+    const adminPanel = document.getElementById("admin-panel");
+    const reservationsList = document.getElementById("reservations-list");
+
+    if (filtresDiv) filtresDiv.style.display = "none";
+    if (reservationForm) reservationForm.style.display = "none";
+    if (adminPanel) adminPanel.classList.remove("hidden");
+
+    if (!reservationsList) return;
+
+    reservationsList.innerHTML = "Chargement...";
+
+    try {
+        const reservations = await recupererReservations();
+
+        if (reservations.length === 0) {
+            reservationsList.innerHTML = "Aucune réservation.";
+            return;
+        }
+
+        reservationsList.innerHTML = reservations
+            .map(
+                (reservation) => `
+                <div class="border-b border-blue-300 py-2">
+                    <p><strong>${reservation.nomRestaurant}</strong></p>
+                    <p>Table : ${reservation.idTable}</p>
+                    <p>Date : ${reservation.dateRes}</p>
+                    <p>Client : ${reservation.prenomClient} ${reservation.nomClient}</p>
+                    <p>Convives : ${reservation.nbConvives}</p>
+                    <p>Téléphone : ${reservation.numTel}</p>
+                </div>
+            `
+            )
+            .join("");
+    } catch (error: any) {
+        reservationsList.innerHTML = error.message;
+    }
+};
+
+(window as any).cacherAdminPanel = function () {
+    const filtresDiv = document.getElementById("filtres");
+    const adminPanel = document.getElementById("admin-panel");
+
+    if (adminPanel) adminPanel.classList.add("hidden");
+    if (filtresDiv) filtresDiv.style.display = "block";
 };

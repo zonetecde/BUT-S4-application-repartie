@@ -143,6 +143,26 @@ public class ProxyServeur {
             sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
         });
 
+        server.createContext("/api/restaurants/reservations", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405,
+                        new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            Reponse response = serviceRestaurant.recupererReservations();
+
+            sendJson(
+                    exchange,
+                    response.isSuccess() ? 200 : 400,
+                    response.toJson()
+            );
+        });
+
         // Crée l'endpoint pour fetch une URL avec le service RMI de Fetch
         server.createContext("/api/fetch", exchange -> {
             if (handleOptions(exchange)) {

@@ -81,3 +81,26 @@ export async function reserverTableRestaurant(data: {
 
     return JSON.parse(text);
 }
+
+export interface ReservationResponse {
+    idRestaurant: number;
+    idReservation: number;
+    nomRestaurant: string;
+    idTable: number;
+    dateRes: string;
+    nomClient: string;
+    prenomClient: string;
+    nbConvives: number;
+    numTel: string;
+}
+
+export async function recupererReservations(): Promise<ReservationResponse[]> {
+    const response = await fetch("http://localhost:8081/api/restaurants/reservations");
+    const json = await response.json();
+
+    if (!json.success) {
+        throw new Error(json.message);
+    }
+
+    return json.data;
+}
