@@ -1,6 +1,7 @@
 import { recupererVelibsNancy, StationVelib } from "./velibs.js";
 import { Incident, recupererIncidentsNancy } from "./incidents.js";
 import { recupererRestoNancy, RestaurantResponse } from "./restaurants.js";
+import { recupererCrousNancy, chargerMenu, Restaurant as RestaurantCrous } from "./crous.js";
 
 // On commence par récupérer les coordonnées de Nancy via l'API https://adresse.data.gouv.fr/outils/api-doc/adresse
 const url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
@@ -11,6 +12,7 @@ declare const L: any;
 let incidents: Incident[] = [];
 let velibs: StationVelib[] = [];
 let restaurants: RestaurantResponse[] = [];
+let crous: RestaurantCrous[] = [];
 let map: any; // Carte Leaflet
 
 // On fetch la réponse de l'API
@@ -36,6 +38,9 @@ fetch(url)
             // On récupère maintenant les informations sur les stations de velibs à Nancy
             velibs = await recupererVelibsNancy();
 
+            // On récupère les restaurants du CROUS à Nancy (bonus)
+            crous = await recupererCrousNancy();
+
             // On récupère les informations sur les restaurants à Nancy
             restaurants = await recupererRestoNancy();
 
@@ -51,6 +56,23 @@ fetch(url)
         // Affiche la carte
         updateMap();
     });
+
+/**
+ * Cache tous les panneaux d'action (form de réservation, menu crous, ...) et affiche seulement le panneau demandé en paramètre.
+ * @param panelId L'id du panneau à afficher (ex: "reservation-form", "menu-crous", ...)
+ */
+function afficherPanneau(panelId: string): void {
+    // Cache tous les panneaux
+    const panels = ["filtres", "reservation-form", "menu-crous"];
+    for (const id of panels) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = "none";
+    }
+
+    // Affiche le panneau demandé
+    const panel = document.getElementById(panelId);
+    if (panel) panel.style.display = "block";
+}
 
 function updateMap() {
     // Clear tous les markers de la carte avant de les réafficher
@@ -101,22 +123,58 @@ function updateMap() {
             marker.on("click", (event: any) => {
                 console.log("Restaurant cliqué :", resto.nom, event);
 
-                // Cache la div de filtre
-                const filtresDiv = document.getElementById("filtres");
-                if (filtresDiv) {
-                    filtresDiv.style.display = "none";
-                }
-
-                // Affiche le formulaire de réservation
-                const reservationForm = document.getElementById("reservation-form");
-                if (reservationForm) {
-                    reservationForm.style.display = "block";
-                }
+                afficherPanneau("reservation-form");
 
                 // Met le nom du restaurant dans le formulaire de réservation
                 const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
                 if (restaurantName) {
                     restaurantName.innerText = resto.nom;
+                }
+            });
+        });
+    }
+
+    // Regarde si la checkbox de filtre "filtre-crous" est en true
+    const filtreCrous = (document.getElementById("filtre-crous") as HTMLInputElement).checked;
+
+    if (filtreCrous) {
+        const crousIcon = L.divIcon({
+            html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #fef08a; border: 2px solid #ca8a04; border-radius: 50%;">🎓</div>',
+            className: "",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+            popupAnchor: [0, -12],
+        });
+
+        crous.forEach((restoCrous) => {
+            const marker = L.marker([restoCrous.latitude, restoCrous.longitude], { icon: crousIcon }).addTo(map);
+            marker.bindPopup(`<b>${restoCrous.nom}</b><br>Adresse : ${restoCrous.adresse}${restoCrous.horaires ? `<br>Horaires : ${JSON.parse(restoCrous.horaires).join(", ")}` : ""}`);
+
+            // Quand on clique sur un resto crous, on affiche son menu à droite
+            marker.on("click", async () => {
+                afficherPanneau("menu-crous");
+
+                // Met le nom du restaurant
+                const crousName = document.getElementById("crous-name");
+                if (crousName) {
+                    crousName.innerText = restoCrous.nom;
+                }
+
+                try {
+                    const menu = await chargerMenu(restoCrous.code);
+                    const menuContent = document.getElementById("menu-content");
+                    if (menuContent) {
+                        menuContent.innerText = menu.menu || "Aucun menu disponible.";
+                    }
+                    const menuDate = document.getElementById("menu-date");
+                    if (menuDate) {
+                        menuDate.innerText = menu.date || "";
+                    }
+                } catch {
+                    const menuContent = document.getElementById("menu-content");
+                    if (menuContent) {
+                        menuContent.innerText = "Impossible de charger le menu.";
+                    }
                 }
             });
         });
@@ -146,15 +204,9 @@ function updateMap() {
 (window as any).updateMap = updateMap; // Expose la fonction updateMap pour qu'elle puisse être appelée depuis le HTML
 
 (window as any).cacherActions = function () {
-    // Cache le formulaire de réservation
-    const reservationForm = document.getElementById("reservation-form");
-    if (reservationForm) {
-        reservationForm.style.display = "none";
-    }
+    afficherPanneau("filtres");
+};
 
-    // Affiche la div de filtre
-    const filtresDiv = document.getElementById("filtres");
-    if (filtresDiv) {
-        filtresDiv.style.display = "block";
-    }
+(window as any).cacherMenuCrous = function () {
+    afficherPanneau("filtres");
 };
