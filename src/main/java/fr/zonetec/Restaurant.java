@@ -54,7 +54,9 @@ public class Restaurant implements ServiceRestaurant {
     public Reponse reserverTable(String nomRestaurant, int idTable, String dateHeure, String nom, String prenom, int nombreConvives, String telephone) {
         try {
             dateHeure = dateHeure.replace('T', ' '); // datetime local retourne : 2026-06-10T19:00
-            if (!dateHeure.contains(":00")) {
+            // Vérifier si on a déjà les secondes (format hh:mm:ss = 2 colons)
+            int colonCount = dateHeure.split(":").length - 1;
+            if (colonCount < 2) {
                 dateHeure += ":00";
             }
             Timestamp dateReservation = Timestamp.valueOf(dateHeure);
@@ -124,7 +126,9 @@ public class Restaurant implements ServiceRestaurant {
     public Reponse recupererTablesRestaurant(String nomRestaurant, String dateHeure, int nombreConvives) throws RemoteException {
         try {
             dateHeure = dateHeure.replace('T', ' ');
-            if (!dateHeure.contains(":00")) {
+            // On vérifie si format hh:mm:ss = 2 colons
+            int colonCount = dateHeure.split(":").length - 1;
+            if (colonCount < 2) {
                 dateHeure += ":00";
             }
             Timestamp dateReservation = Timestamp.valueOf(dateHeure);
