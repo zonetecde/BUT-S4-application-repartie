@@ -53,29 +53,30 @@ java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerFetch
 java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerCrous
 ```
 
----
+## Machine D - Service PointGeo
 
-## Machine C - Service Crous
+Le service PointGeo a besoin d'un accès à la base de données.
 
 ```bash
-java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerCrous
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerPointGeo
 ```
 
 ---
 
-## Machine D - Proxy HTTP
+## Machine E - Proxy HTTP
 
-Le proxy HTTP doit être lancé **après** les trois services RMI.
+Le proxy HTTP doit être lancé **après** les quatre services RMI.
 
 ```bash
 java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur \
     8081 \
     <IP_RESTAURANT> 1099 \
     <IP_CROUS> 1099 \
-    <IP_FETCH> 1099
+    <IP_FETCH> 1099 \
+    <IP_POINTGEO> 1099
 ```
 
-Les 7 arguments sont :
+Les 9 arguments sont :
 
 | #   | Paramètre       | Défaut      | Description                     |
 | --- | --------------- | ----------- | ------------------------------- |
@@ -86,11 +87,13 @@ Les 7 arguments sont :
 | 5   | Port Crous      | `1099`      | Port RMI de la machine C        |
 | 6   | Hôte Fetch      | `localhost` | IP de la machine B              |
 | 7   | Port Fetch      | `1099`      | Port RMI de la machine B        |
+| 8   | Hôte PointGeo   | `localhost` | IP de la machine D              |
+| 9   | Port PointGeo   | `1099`      | Port RMI de la machine D        |
 
 ### Avec tout sur la même machine :
 
 ```bash
-java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur 8081 localhost 1099 localhost 1099 localhost 1099
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur 8081 localhost 1099 localhost 1099 localhost 1099 localhost 1099
 ```
 
 ---
