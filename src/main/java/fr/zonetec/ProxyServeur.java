@@ -20,22 +20,21 @@ public class ProxyServeur {
     /**
      * Lance le proxy HTTP et récupère les services RMI.
      *
-     * @param args args[0]=hôte RMI Restaurant, args[1]=port RMI Restaurant,
-     *             args[2]=port HTTP,
-     *             args[3]=hôte RMI Crous,   args[4]=port RMI Crous,
-     *             args[5]=hôte RMI Fetch,   args[6]=port RMI Fetch
+     * @param args args[0]=port HTTP,
+     *             args[1]=hôte RMI Restaurant, args[2]=port RMI Restaurant,
+     *             args[3]=hôte RMI Crous,     args[4]=port RMI Crous,
+     *             args[5]=hôte RMI Fetch,     args[6]=port RMI Fetch
      * @throws IOException si le serveur HTTP ne peut pas démarrer
      * @throws NotBoundException si un service RMI n'est pas enregistré
      */
     public static void main(String[] args) throws IOException, NotBoundException {
+        int port = args.length > 0 ? Integer.parseInt(args[0]) : 8081;
+
         // IP et Port où est exposé le service RMI Restaurant.
         // Par défaut on lance le proxy sur le même ordinateur que le service RMI,
         // donc localhost:1099
-        String restaurantHost = args.length > 0 ? args[0] : "localhost";
-        int restaurantPort = args.length > 1 ? Integer.parseInt(args[1]) : 1099;
-
-        // On va exposer notre API sur le port 8081
-        int port = args.length > 2 ? Integer.parseInt(args[2]) : 8081;
+        String restaurantHost = args.length > 1 ? args[1] : "localhost";
+        int restaurantPort = args.length > 2 ? Integer.parseInt(args[2]) : 1099;
 
         // IP et Port où est exposé le service RMI Crous
         String crousHost = args.length > 3 ? args[3] : "localhost";
