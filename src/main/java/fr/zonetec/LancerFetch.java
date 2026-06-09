@@ -10,19 +10,17 @@ public class LancerFetch {
      * Lance et enregistre le service RMI du Fetch.
      */
     public static void main(String[] args) throws RemoteException {
+        // nécessaire sinon on a des problemes de build
+        System.setProperty("java.rmi.server.codebase", "file:target/restaurant-rmi-server.jar");
+
         // Service RMI du Fetch
         Fetch fetch = new Fetch();
 
         try {
             ServiceFetch rd = (ServiceFetch) UnicastRemoteObject.exportObject(fetch, 0);
 
-            // Crée ou récupère l'annuaire RMI
-            Registry reg;
-            try {
-                reg = LocateRegistry.createRegistry(1099);
-            } catch (RemoteException e) {
-                reg = LocateRegistry.getRegistry("localhost", 1099);
-            }
+            // Crée l'annuaire RMI
+            Registry reg = LocateRegistry.createRegistry(1099);
             reg.rebind("fetch", rd);
 
             System.out.println("Service Fetch enregistré dans l'annuaire RMI");
