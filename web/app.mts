@@ -1,12 +1,6 @@
 import { recupererVelibsNancy, StationVelib } from "./velibs.js";
 import { Incident, recupererIncidentsNancy } from "./incidents.js";
-import {
-    recupererRestoNancy,
-    RestaurantResponse,
-    recupererTablesRestaurant,
-    reserverTableRestaurant,
-    recupererReservations,
-} from "./restaurants.js";
+import { recupererRestoNancy, RestaurantResponse, recupererTablesRestaurant, reserverTableRestaurant, recupererReservations } from "./restaurants.js";
 import { recupererCrousNancy, chargerMenu, Restaurant as RestaurantCrous } from "./crous.js";
 import { recupererPointsGeo, ajouterPointGeo, PointGeo } from "./points.js";
 
@@ -83,7 +77,7 @@ fetch(url)
  */
 function afficherPanneau(panelId: string): void {
     // Cache tous les panneaux
-    const panels = ["filtres", "reservation-form", "menu-crous"];
+    const panels = ["filtres", "reservation-form", "menu-crous", "add-point-form"];
     for (const id of panels) {
         const el = document.getElementById(id);
         if (el) el.style.display = "none";

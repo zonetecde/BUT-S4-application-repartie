@@ -198,7 +198,7 @@
     localiserUtilisateur();
   });
   function afficherPanneau(panelId) {
-    const panels = ["filtres", "reservation-form", "menu-crous"];
+    const panels = ["filtres", "reservation-form", "menu-crous", "add-point-form"];
     for (const id of panels) {
       const el = document.getElementById(id);
       if (el) el.style.display = "none";

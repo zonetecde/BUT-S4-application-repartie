@@ -81,7 +81,7 @@ public class InitDataBase {
             " idPoint NUMBER(3) GENERATED AS IDENTITY," +
             " coordonneesX NUMBER(9,6) NOT NULL," +
             " coordonneesY NUMBER(9,6) NOT NULL," +
-            " emoji VARCHAR2(10) NOT NULL," +
+            " emoji NVARCHAR2(10) NOT NULL," +
             " titre VARCHAR2(100) NOT NULL," +
             " description VARCHAR2(500)," +
             " CONSTRAINT pk_point_geo PRIMARY KEY (idPoint)" +

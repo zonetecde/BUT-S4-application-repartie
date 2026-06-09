@@ -39,12 +39,7 @@
 
                 <hr class="my-3" />
 
-                <button
-                        class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 cursor-pointer"
-                        onclick="afficherAdminPanel()"
-                >
-                    Admin panel
-                </button>
+                <button class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 cursor-pointer" onclick="afficherAdminPanel()">Admin panel</button>
 
                 <input type="checkbox" id="filtre-points" checked class="mr-2" onchange="updateMap()" />
                 <label for="filtre-points">Afficher mes points</label><br />
@@ -58,12 +53,7 @@
                 <p class="text-lg"><strong>Actions</strong></p>
 
                 <div class="flex flex-col gap-y-4 mt-2">
-                    <button
-                            class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 cursor-pointer"
-                            onclick="afficherTablesDisponibles()"
-                    >
-                        Réserver une table pour le restaurant <span id="restaurant-name"></span>
-                    </button>
+                    <button class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 cursor-pointer" onclick="afficherTablesDisponibles()">Réserver une table pour le restaurant <span id="restaurant-name"></span></button>
 
                     <div id="tables-dispo" class="mt-4 max-h-48 overflow-y-auto border-2 border-blue-300 rounded p-2 hidden"></div>
 
@@ -76,12 +66,7 @@
 
                 <div id="reservations-list" class="mt-3 max-h-96 overflow-y-auto"></div>
 
-                <button
-                        class="bg-gray-200 px-3 py-1 rounded border-2 border-gray-400 mt-3 cursor-pointer"
-                        onclick="cacherAdminPanel()"
-                >
-                    Retour
-                </button>
+                <button class="bg-gray-200 px-3 py-1 rounded border-2 border-gray-400 mt-3 cursor-pointer" onclick="cacherAdminPanel()">Retour</button>
             </section>
 
             <section class="w-1/3 bg-yellow-50 rounded-xl p-4 border-4 border-yellow-400 shadow-2xl shadow-gray-600 overflow-y-auto" id="menu-crous" style="display: none">
@@ -95,7 +80,7 @@
             </section>
 
             <section class="w-1/3 bg-green-50 rounded-xl p-4 border-4 border-green-400 shadow-2xl shadow-gray-600 overflow-y-auto" id="add-point-form" style="display: none">
-                <p class="text-lg"><strong>Ajouter un point 📍</strong></p>
+                <p class="text-lg"><strong>Ajouter un point</strong></p>
 
                 <div class="mt-3 p-2 bg-blue-100 rounded border border-blue-300">
                     <p class="text-sm font-semibold">Localisation :</p>
@@ -103,7 +88,7 @@
                 </div>
 
                 <div class="mt-3">
-                    <label class="text-sm font-semibold">Choisir un emoji :</label>
+                    <label class="text-sm font-semibold">Choisir une icone :</label>
                     <div class="flex gap-2 mt-2 flex-wrap">
                         <button class="emoji-btn border-4 border-blue-600 px-3 py-2 rounded text-xl cursor-pointer bg-white" onclick="changeEmoji('📍')">📍</button>
                         <button class="emoji-btn border-2 border-blue-300 px-3 py-2 rounded text-xl cursor-pointer bg-white" onclick="changeEmoji('⭐')">⭐</button>
@@ -125,8 +110,8 @@
                 </div>
 
                 <div class="flex gap-2 mt-4">
-                    <button class="bg-green-200 px-3 py-1 rounded border-2 border-green-400 cursor-pointer flex-1" onclick="validerAjoutPoint()">Ajouter 👍</button>
-                    <button class="bg-red-200 px-3 py-1 rounded border-2 border-red-400 cursor-pointer flex-1" onclick="activerAjoutPoint(); afficherPanneau('filtres')">Annuler ❌</button>
+                    <button class="bg-green-200 px-3 py-1 rounded border-2 border-green-400 cursor-pointer flex-1" onclick="validerAjoutPoint()">Ajouter</button>
+                    <button class="bg-red-200 px-3 py-1 rounded border-2 border-red-400 cursor-pointer flex-1" onclick="activerAjoutPoint(); afficherPanneau('filtres')">Annuler</button>
                 </div>
             </section>
         </div>
