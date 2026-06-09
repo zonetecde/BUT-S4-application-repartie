@@ -6,14 +6,19 @@ export interface RestaurantResponse {
     lon: number;
 }
 
-export async function recupererRestoNancy(): Promise<RestaurantResponse[]> {
+export async function recupererRestoNancy(proxyUrl: string): Promise<RestaurantResponse[]> {
     // On commence par récupérer l'ensemble des Restaurants sur Nancy
     // On utilise le Proxy Java qu'on a créé, et qui expose l'endpoint /api/restaurants/coordonnees qui retourne
     // les coordonnées de tous les restaurants de Nancy dans la base
-    const url = "http://localhost:8081/api/restaurants/coordonnees";
+    const url = `${proxyUrl}/api/restaurants/coordonnees`;
 
     const response = await fetch(url);
-    const dataResto = (await response.json()) as { data: RestaurantResponse[] };
+    const dataResto = (await response.json()) as { success: boolean; message: string; data: RestaurantResponse[] };
+
+    if (!dataResto.success) {
+        console.error("Erreur lors de la récupération des restaurants :", dataResto.message);
+        return [];
+    }
 
     // Transforme les données de l'API en interface Restaurant
     const restaurants = dataResto.data.map((resto: RestaurantResponse) => ({

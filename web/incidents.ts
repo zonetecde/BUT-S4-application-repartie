@@ -7,10 +7,9 @@ export interface Incident {
     location_description?: string;
 }
 
-export async function recupererIncidentsNancy() {
-    // Le proxy java est exposé sur le port 8081
-    // On appel l'endpoint /api/fetch qui fait appel au service RMI Fetch et  qui prend en paramètre l'url de la page à fetch
-    const resp = await fetch("http://localhost:8081/api/fetch?url=https://carto.g-ny.eu/data/cifs/cifs_waze_v2.json");
+export async function recupererIncidentsNancy(proxyUrl: string) {
+    // On appel l'endpoint /api/fetch du proxy qui fait appel au service RMI Fetch
+    const resp = await fetch(`${proxyUrl}/api/fetch?url=https://carto.g-ny.eu/data/cifs/cifs_waze_v2.json`);
     const respData = await resp.json(); // contient success et data
     if (!respData.success) {
         console.error("Erreur lors de la récupération des incidents :", respData.error);

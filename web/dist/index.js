@@ -60,12 +60,56 @@
     return restaurants2;
   }
 
+  // crous.ts
+  async function recupererCrousNancy() {
+    const url2 = "https://api.croustillant.menu/v1/regions";
+    const response = await fetch(url2);
+    const dataRegions = await response.json();
+    const regionNancy = dataRegions.data.find((region) => region.libelle.toLowerCase().includes("nancy"));
+    if (!regionNancy) {
+      console.error("R\xE9gion Nancy non trouv\xE9e");
+      return [];
+    }
+    const codeNancy = regionNancy.code;
+    const urlResto = `https://api.croustillant.menu/v1/regions/${codeNancy}/restaurants`;
+    const responseResto = await fetch(urlResto);
+    const dataResto = await responseResto.json();
+    return dataResto.data;
+  }
+  async function chargerMenu(idRestaurant) {
+    const url2 = `https://api.croustillant.menu/v1/restaurants/${idRestaurant}/menu`;
+    const response = await fetch(url2);
+    const dataMenu = await response.json();
+    const jour = dataMenu.data[0];
+    const date = jour.date;
+    let menuStr = "";
+    for (const repas of jour.repas) {
+      const typeRepas = repas.type === "matin" ? "Matin" : "Soir";
+      menuStr += `${typeRepas}
+`;
+      for (const categorie of repas.categories) {
+        menuStr += `  ${categorie.libelle} :
+`;
+        for (const plat of categorie.plats) {
+          menuStr += `    - ${plat.libelle}
+`;
+        }
+      }
+    }
+    return {
+      date,
+      menu: menuStr
+    };
+  }
+
   // app.mts
   var url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
   var incidents = [];
   var velibs = [];
   var restaurants = [];
+  var crous = [];
   var map;
+  var userMarker = null;
   fetch(url).then((response) => response.json()).then(async (data) => {
     const lon = data.features[0].geometry.coordinates[0];
     const lat = data.features[0].geometry.coordinates[1];
@@ -77,16 +121,51 @@
     }).addTo(map);
     try {
       velibs = await recupererVelibsNancy();
+      crous = await recupererCrousNancy();
       restaurants = await recupererRestoNancy();
       incidents = await recupererIncidentsNancy();
     } catch (error) {
       console.error("Erreur lors de la r\xE9cup\xE9ration des donn\xE9es :", error);
     }
     updateMap();
+    localiserUtilisateur();
   });
+  function afficherPanneau(panelId) {
+    const panels = ["filtres", "reservation-form", "menu-crous"];
+    for (const id of panels) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    }
+    const panel = document.getElementById(panelId);
+    if (panel) panel.style.display = "block";
+  }
+  function localiserUtilisateur() {
+    if (!navigator.geolocation) {
+      console.warn("G\xE9olocalisation non support\xE9e par le navigateur");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const userIcon = L.divIcon({
+          html: '<div style="width: 28px; height: 28px; font-size: 16px; line-height: 24px; text-align: center; background: #dbeafe; border: 2px solid #2563eb; border-radius: 50%;">\u{1F9D1}</div>',
+          className: "",
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+          popupAnchor: [0, -14]
+        });
+        userMarker = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
+        userMarker.bindPopup("<b>Vous \xEAtes ici</b>");
+        userMarker.openPopup();
+      },
+      (error) => {
+        console.warn("G\xE9olocalisation refus\xE9e ou indisponible :", error.message);
+      }
+    );
+  }
   function updateMap() {
     map.eachLayer((layer) => {
-      if (layer instanceof L.Marker) {
+      if (layer instanceof L.Marker && layer !== userMarker) {
         map.removeLayer(layer);
       }
     });
@@ -118,17 +197,47 @@
         marker.bindPopup(`<b>${resto.nom}</b><br>Adresse : ${resto.adresse}`);
         marker.on("click", (event) => {
           console.log("Restaurant cliqu\xE9 :", resto.nom, event);
-          const filtresDiv = document.getElementById("filtres");
-          if (filtresDiv) {
-            filtresDiv.style.display = "none";
-          }
-          const reservationForm = document.getElementById("reservation-form");
-          if (reservationForm) {
-            reservationForm.style.display = "block";
-          }
+          afficherPanneau("reservation-form");
           const restaurantName = document.getElementById("restaurant-name");
           if (restaurantName) {
             restaurantName.innerText = resto.nom;
+          }
+        });
+      });
+    }
+    const filtreCrous = document.getElementById("filtre-crous").checked;
+    if (filtreCrous) {
+      const crousIcon = L.divIcon({
+        html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #fef08a; border: 2px solid #ca8a04; border-radius: 50%;">\u{1F393}</div>',
+        className: "",
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        popupAnchor: [0, -12]
+      });
+      crous.forEach((restoCrous) => {
+        const marker = L.marker([restoCrous.latitude, restoCrous.longitude], { icon: crousIcon }).addTo(map);
+        marker.bindPopup(`<b>${restoCrous.nom}</b><br>Adresse : ${restoCrous.adresse}${restoCrous.horaires ? `<br>Horaires : ${JSON.parse(restoCrous.horaires).join(", ")}` : ""}`);
+        marker.on("click", async () => {
+          afficherPanneau("menu-crous");
+          const crousName = document.getElementById("crous-name");
+          if (crousName) {
+            crousName.innerText = restoCrous.nom;
+          }
+          try {
+            const menu = await chargerMenu(restoCrous.code);
+            const menuContent = document.getElementById("menu-content");
+            if (menuContent) {
+              menuContent.innerText = menu.menu || "Aucun menu disponible.";
+            }
+            const menuDate = document.getElementById("menu-date");
+            if (menuDate) {
+              menuDate.innerText = menu.date || "";
+            }
+          } catch {
+            const menuContent = document.getElementById("menu-content");
+            if (menuContent) {
+              menuContent.innerText = "Impossible de charger le menu.";
+            }
           }
         });
       });
@@ -150,14 +259,10 @@
   }
   window.updateMap = updateMap;
   window.cacherActions = function() {
-    const reservationForm = document.getElementById("reservation-form");
-    if (reservationForm) {
-      reservationForm.style.display = "none";
-    }
-    const filtresDiv = document.getElementById("filtres");
-    if (filtresDiv) {
-      filtresDiv.style.display = "block";
-    }
+    afficherPanneau("filtres");
+  };
+  window.cacherMenuCrous = function() {
+    afficherPanneau("filtres");
   };
 })();
 //# sourceMappingURL=index.js.map

@@ -1,12 +1,13 @@
 import { recupererVelibsNancy, StationVelib } from "./velibs.js";
 import { Incident, recupererIncidentsNancy } from "./incidents.js";
-import {
-    recupererRestoNancy,
-    RestaurantResponse,
-    recupererTablesRestaurant,
-    reserverTableRestaurant,
-} from "./restaurants.js";
+import { recupererRestoNancy, RestaurantResponse, recupererTablesRestaurant, reserverTableRestaurant } from "./restaurants.js";
+import { recupererCrousNancy, chargerMenu, Restaurant as RestaurantCrous } from "./crous.js";
 
+// Demande l'adresse du proxy au démarrage
+const proxyHost = prompt("Adresse IP du proxy HTTP ?", "localhost");
+const proxyPort = prompt("Port du proxy HTTP ?", "8081");
+// Par défaut c'est localhost 8081
+const proxyUrl = `http://${proxyHost || "localhost"}:${proxyPort || "8081"}`;
 
 // On commence par récupérer les coordonnées de Nancy via l'API https://adresse.data.gouv.fr/outils/api-doc/adresse
 const url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
@@ -17,7 +18,9 @@ declare const L: any;
 let incidents: Incident[] = [];
 let velibs: StationVelib[] = [];
 let restaurants: RestaurantResponse[] = [];
+let crous: RestaurantCrous[] = [];
 let map: any; // Carte Leaflet
+let positionActuelMarker: any = null; // Marker de la position utilisateur actuelle
 
 // On fetch la réponse de l'API
 fetch(url)
@@ -42,26 +45,69 @@ fetch(url)
             // On récupère maintenant les informations sur les stations de velibs à Nancy
             velibs = await recupererVelibsNancy();
 
-            // On récupère les informations sur les restaurants à Nancy
-            restaurants = await recupererRestoNancy();
+            // On récupère les restaurants du CROUS à Nancy (bonus)
+            crous = await recupererCrousNancy(proxyUrl);
 
-            // Et on récupère aussi les incidents à Nancy
-            incidents = await recupererIncidentsNancy();
+            // On récupère les informations sur les restaurants à Nancy
+            restaurants = await recupererRestoNancy(proxyUrl);
+
+            // Et on récupère aussi les incidents à Nancy (via le proxy)
+            incidents = await recupererIncidentsNancy(proxyUrl);
         } catch (error: any) {
-            // C'est un catch controllé : quand on travail sur nos machines,
-            // recupererIncidentsNancy ne fonctionne pas car on a pas accès au proxy
-            // java.
             console.error("Erreur lors de la récupération des données :", error);
         }
 
         // Affiche la carte
         updateMap();
+
+        // Demande la position de l'utilisateur pour l'afficher sur la carte
+        localiserUtilisateur();
     });
+
+/**
+ * Cache tous les panneaux d'action (form de réservation, menu crous, ...) et affiche seulement le panneau demandé en paramètre.
+ * @param panelId L'id du panneau à afficher (ex: "reservation-form", "menu-crous", ...)
+ */
+function afficherPanneau(panelId: string): void {
+    // Cache tous les panneaux
+    const panels = ["filtres", "reservation-form", "menu-crous"];
+    for (const id of panels) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = "none";
+    }
+
+    // Affiche le panneau demandé
+    const panel = document.getElementById(panelId);
+    if (panel) panel.style.display = "block";
+}
+
+function localiserUtilisateur() {
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
+
+            const userIcon = L.divIcon({
+                html: '<div style="width: 28px; height: 28px; font-size: 16px; line-height: 24px; text-align: center; background: #dbeafe; border: 2px solid #2563eb; border-radius: 50%;">🧑</div>',
+                className: "",
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                popupAnchor: [0, -14],
+            });
+
+            positionActuelMarker = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
+            positionActuelMarker.bindPopup("<b>Vous êtes ici</b>");
+            positionActuelMarker.openPopup();
+        },
+        (error) => {
+            console.log("Veuillez autoriser la géolocalisation pour afficher votre position sur la carte." + error);
+        }
+    );
+}
 
 function updateMap() {
     // Clear tous les markers de la carte avant de les réafficher
     map.eachLayer((layer: any) => {
-        if (layer instanceof L.Marker) {
+        if (layer instanceof L.Marker && layer !== positionActuelMarker) {
             map.removeLayer(layer);
         }
     });
@@ -107,17 +153,7 @@ function updateMap() {
             marker.on("click", (event: any) => {
                 console.log("Restaurant cliqué :", resto.nom, event);
 
-                // Cache la div de filtre
-                const filtresDiv = document.getElementById("filtres");
-                if (filtresDiv) {
-                    filtresDiv.style.display = "none";
-                }
-
-                // Affiche le formulaire de réservation
-                const reservationForm = document.getElementById("reservation-form");
-                if (reservationForm) {
-                    reservationForm.style.display = "block";
-                }
+                afficherPanneau("reservation-form");
 
                 // Met le nom du restaurant dans le formulaire de réservation
                 const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
@@ -129,6 +165,52 @@ function updateMap() {
                 if (tablesDiv) {
                     tablesDiv.innerHTML = "";
                     tablesDiv.classList.add("hidden");
+                }
+            });
+        });
+    }
+
+    // Regarde si la checkbox de filtre "filtre-crous" est en true
+    const filtreCrous = (document.getElementById("filtre-crous") as HTMLInputElement).checked;
+
+    if (filtreCrous) {
+        const crousIcon = L.divIcon({
+            html: '<div style="width: 24px; height: 24px; font-size: 14px; line-height: 20px; text-align: center; background: #fef08a; border: 2px solid #ca8a04; border-radius: 50%;">🎓</div>',
+            className: "",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+            popupAnchor: [0, -12],
+        });
+
+        crous.forEach((restoCrous) => {
+            const marker = L.marker([restoCrous.latitude, restoCrous.longitude], { icon: crousIcon }).addTo(map);
+            marker.bindPopup(`<b>${restoCrous.nom}</b><br>Adresse : ${restoCrous.adresse}${restoCrous.horaires ? `<br>Horaires : ${JSON.parse(restoCrous.horaires).join(", ")}` : ""}`);
+
+            // Quand on clique sur un resto crous, on affiche son menu à droite
+            marker.on("click", async () => {
+                afficherPanneau("menu-crous");
+
+                // Met le nom du restaurant
+                const crousName = document.getElementById("crous-name");
+                if (crousName) {
+                    crousName.innerText = restoCrous.nom;
+                }
+
+                try {
+                    const menu = await chargerMenu(proxyUrl, restoCrous.code);
+                    const menuContent = document.getElementById("menu-content");
+                    if (menuContent) {
+                        menuContent.innerText = menu.menu || "Aucun menu disponible.";
+                    }
+                    const menuDate = document.getElementById("menu-date");
+                    if (menuDate) {
+                        menuDate.innerText = menu.date || "";
+                    }
+                } catch {
+                    const menuContent = document.getElementById("menu-content");
+                    if (menuContent) {
+                        menuContent.innerText = "Impossible de charger le menu.";
+                    }
                 }
             });
         });
@@ -158,18 +240,11 @@ function updateMap() {
 (window as any).updateMap = updateMap; // Expose la fonction updateMap pour qu'elle puisse être appelée depuis le HTML
 
 (window as any).cacherActions = function () {
-    // Cache le formulaire de réservation
-    const reservationForm = document.getElementById("reservation-form");
-    if (reservationForm) {
-        reservationForm.style.display = "none";
-    }
+    afficherPanneau("filtres");
+};
 
-    // Affiche la div de filtre
-    const filtresDiv = document.getElementById("filtres");
-    if (filtresDiv) {
-        filtresDiv.style.display = "block";
-    }
-
+(window as any).cacherMenuCrous = function () {
+    afficherPanneau("filtres");
 };
 
 (window as any).afficherTablesDisponibles = async function () {
