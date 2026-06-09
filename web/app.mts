@@ -1,6 +1,12 @@
 import { recupererVelibsNancy, StationVelib } from "./velibs.js";
 import { Incident, recupererIncidentsNancy } from "./incidents.js";
-import { recupererRestoNancy, RestaurantResponse } from "./restaurants.js";
+import {
+    recupererRestoNancy,
+    RestaurantResponse,
+    recupererTablesRestaurant,
+    reserverTableRestaurant,
+} from "./restaurants.js";
+
 
 // On commence par récupérer les coordonnées de Nancy via l'API https://adresse.data.gouv.fr/outils/api-doc/adresse
 const url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
@@ -118,6 +124,12 @@ function updateMap() {
                 if (restaurantName) {
                     restaurantName.innerText = resto.nom;
                 }
+
+                const tablesDiv = document.getElementById("tables-dispo");
+                if (tablesDiv) {
+                    tablesDiv.innerHTML = "";
+                    tablesDiv.classList.add("hidden");
+                }
             });
         });
     }
@@ -157,4 +169,104 @@ function updateMap() {
     if (filtresDiv) {
         filtresDiv.style.display = "block";
     }
+
+};
+
+(window as any).afficherTablesDisponibles = async function () {
+    const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
+    const tablesDiv = document.getElementById("tables-dispo");
+
+    if (!restaurantName || !tablesDiv) return;
+
+    const nomRestaurant = restaurantName.innerText;
+
+    tablesDiv.innerHTML = "Chargement des tables disponibles...";
+    tablesDiv.classList.remove("hidden");
+
+    try {
+        const tables = await recupererTablesRestaurant(nomRestaurant);
+
+        if (tables.length === 0) {
+            tablesDiv.innerHTML = "Aucune table disponible.";
+            return;
+        }
+
+        tablesDiv.innerHTML = tables
+            .map(
+                (table) => `
+        <button
+            class="w-full text-left border-b border-blue-300 py-2 hover:bg-blue-200"
+            onclick="selectionnerTable(${table.idTable}, ${table.nbPlaces})"
+        >
+            <strong>Table ${table.idTable}</strong> — ${table.nbPlaces} places
+        </button>
+    `
+            )
+            .join("");
+    } catch (error: any) {
+        tablesDiv.innerHTML = error.message;
+    }
+};
+
+(window as any).validerReservation = async function (idTable: number) {
+    const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
+
+    const nom = (document.getElementById("nom-reservation") as HTMLInputElement).value;
+    const prenom = (document.getElementById("prenom-reservation") as HTMLInputElement).value;
+    const telephone = (document.getElementById("tel-reservation") as HTMLInputElement).value;
+    const dateInput = (document.getElementById("date-reservation") as HTMLInputElement).value;
+    const nombreConvives = Number((document.getElementById("convives-reservation") as HTMLInputElement).value);
+
+    if (!nom || !prenom || !telephone || !dateInput || !nombreConvives) {
+        alert("Veuillez remplir tous les champs.");
+        return;
+    }
+
+    const dateHeure = dateInput.replace("T", " ") + ":00";
+
+    const resultat = await reserverTableRestaurant({
+        nomRestaurant: restaurantName.innerText,
+        idTable: idTable,
+        dateHeure: dateHeure,
+        nom: nom,
+        prenom: prenom,
+        nombreConvives: nombreConvives,
+        telephone: telephone,
+    });
+
+    alert(resultat.message);
+
+    if (resultat.succes || resultat.success) {
+        (window as any).cacherActions();
+    }
+};
+
+(window as any).selectionnerTable = function (idTable: number, nbPlaces: number) {
+    const tablesDiv = document.getElementById("tables-dispo");
+
+    if (!tablesDiv) return;
+
+    tablesDiv.innerHTML = `
+        <p class="mb-2"><strong>Table ${idTable}</strong> sélectionnée — ${nbPlaces} places</p>
+
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="nom-reservation" placeholder="Nom" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="prenom-reservation" placeholder="Prénom" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="tel-reservation" placeholder="Téléphone" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="date-reservation" type="datetime-local" />
+        <input class="border rounded px-2 py-1 mt-1 w-full" id="convives-reservation" type="number" min="1" max="${nbPlaces}" placeholder="Nombre de convives" />
+
+        <button
+            class="bg-green-200 px-3 py-1 rounded border-2 border-green-400 mt-2 cursor-pointer"
+            onclick="validerReservation(${idTable})"
+        >
+            Valider la réservation
+        </button>
+
+        <button
+            class="bg-gray-200 px-3 py-1 rounded border-2 border-gray-400 mt-2 ml-2 cursor-pointer"
+            onclick="afficherTablesDisponibles()"
+        >
+            Choisir une autre table
+        </button>
+    `;
 };

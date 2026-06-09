@@ -39,7 +39,14 @@
                 <p class="text-lg"><strong>Actions</strong></p>
 
                 <div class="flex flex-col gap-y-4 mt-2">
-                    <button class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 cursor-pointer">Réserver une table pour le restaurant <span id="restaurant-name"></span></button>
+                    <button
+                            class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 cursor-pointer"
+                            onclick="afficherTablesDisponibles()"
+                    >
+                        Réserver une table pour le restaurant <span id="restaurant-name"></span>
+                    </button>
+
+                    <div id="tables-dispo" class="mt-4 max-h-48 overflow-y-auto border-2 border-blue-300 rounded p-2 hidden"></div>
 
                     <button class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 cursor-pointer" onclick="cacherActions()">Retourner aux filtres</button>
                 </div>
