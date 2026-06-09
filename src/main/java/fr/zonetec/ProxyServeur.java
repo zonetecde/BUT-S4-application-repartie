@@ -20,24 +20,42 @@ public class ProxyServeur {
     /**
      * Lance le proxy HTTP et récupère les services RMI.
      *
-     * @param args hôte RMI, port RMI et port HTTP optionnels
+     * @param args args[0]=hôte RMI Restaurant, args[1]=port RMI Restaurant,
+     *             args[2]=port HTTP,
+     *             args[3]=hôte RMI Crous,   args[4]=port RMI Crous,
+     *             args[5]=hôte RMI Fetch,   args[6]=port RMI Fetch
      * @throws IOException si le serveur HTTP ne peut pas démarrer
      * @throws NotBoundException si un service RMI n'est pas enregistré
      */
     public static void main(String[] args) throws IOException, NotBoundException {
-        // IP et Port où est exposé le service RMI.
+        // IP et Port où est exposé le service RMI Restaurant.
         // Par défaut on lance le proxy sur le même ordinateur que le service RMI,
         // donc localhost:1099
-        String rmiHost = args.length > 0 ? args[0] : "localhost";
-        int rmiPort = args.length > 1 ? Integer.parseInt(args[1]) : 1099;
+        String restaurantHost = args.length > 0 ? args[0] : "localhost";
+        int restaurantPort = args.length > 1 ? Integer.parseInt(args[1]) : 1099;
 
         // On va exposer notre API sur le port 8081
         int port = args.length > 2 ? Integer.parseInt(args[2]) : 8081;
 
-        // Récupère l'annuaire RMI et les services
-        Registry reg = LocateRegistry.getRegistry(rmiHost, rmiPort);
-        ServiceRestaurant serviceRestaurant = (ServiceRestaurant) reg.lookup("restaurant");
-        ServiceFetch serviceFetch = (ServiceFetch) reg.lookup("fetch");
+        // IP et Port où est exposé le service RMI Crous
+        String crousHost = args.length > 3 ? args[3] : "localhost";
+        int crousPort = args.length > 4 ? Integer.parseInt(args[4]) : 1099;
+
+        // IP et Port où est exposé le service RMI Fetch
+        String fetchHost = args.length > 5 ? args[5] : "localhost";
+        int fetchPort = args.length > 6 ? Integer.parseInt(args[6]) : 1099;
+
+        // Récupère l'annuaire RMI et le service Restaurant
+        Registry regRestaurant = LocateRegistry.getRegistry(restaurantHost, restaurantPort);
+        ServiceRestaurant serviceRestaurant = (ServiceRestaurant) regRestaurant.lookup("restaurant");
+
+        // Récupère l'annuaire RMI du service Crous
+        Registry regCrous = LocateRegistry.getRegistry(crousHost, crousPort);
+        ServiceCrous serviceCrous = (ServiceCrous) regCrous.lookup("crous");
+
+        // Récupère l'annuaire RMI du service Fetch
+        Registry regFetch = LocateRegistry.getRegistry(fetchHost, fetchPort);
+        ServiceFetch serviceFetch = (ServiceFetch) regFetch.lookup("fetch");
 
         // Créer et configure le serveur HTTP
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -139,6 +157,53 @@ public class ProxyServeur {
 
             // Appel la méthode du service RMI et envoie la réponse au client
             Reponse response = serviceFetch.fetch(getQueryParams(exchange).get("url"));
+            sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
+        });
+
+        // Crée l'endpoint pour récupérer les restaurants du CROUS d'une ville
+        server.createContext("/api/crous/restaurants", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            // Appel la méthode du service RMI Crous
+            Reponse response = serviceCrous.recupererRestaurants(getQueryParams(exchange).get("ville"));
+            sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
+        });
+
+        // Crée l'endpoint pour récupérer le menu d'un restaurant CROUS
+        server.createContext("/api/crous/menu", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            // Vérifie que l'id du restaurant est présent
+            Map<String, String> params = getQueryParams(exchange);
+            if (!params.containsKey("idRestaurant")) {
+                sendJson(exchange, 400, new Reponse(false, "Paramètre idRestaurant manquant", null).toJson());
+                return;
+            }
+
+            int idRestaurant;
+            try {
+                idRestaurant = Integer.parseInt(params.get("idRestaurant"));
+            } catch (NumberFormatException e) {
+                sendJson(exchange, 400, new Reponse(false, "Paramètre idRestaurant invalide", null).toJson());
+                return;
+            }
+
+            // Appel la méthode du service RMI Crous
+            Reponse response = serviceCrous.chargerMenu(idRestaurant);
             sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
         });
 

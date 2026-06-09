@@ -7,12 +7,9 @@ import java.rmi.server.UnicastRemoteObject;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class App {
+public class LancerRestaurant {
     /**
      * Lance et enregistre le service RMI des restaurants.
-     *
-     * @param args arguments de la ligne de commande
-     * @throws RemoteException si une erreur de communication RMI se produit
      */
     public static void main(String[] args) throws RemoteException {
         try {
@@ -35,18 +32,8 @@ public class App {
 
             Registry reg = LocateRegistry.getRegistry("localhost");
             reg.rebind("restaurant", rd);
-        } catch (RemoteException e) {
-            System.out.println("Un problème est survenue lors de l'inscription du service dans l'annuaire : " + e);
-        }
 
-        // Service RMI du Fetch
-        Fetch fetch = new Fetch();
-
-        try {
-            ServiceFetch rd = (ServiceFetch) UnicastRemoteObject.exportObject(fetch, 0);
-
-            Registry reg = LocateRegistry.getRegistry("localhost");
-            reg.rebind("fetch", rd);
+            System.out.println("Service Restaurant enregistré dans l'annuaire RMI");
         } catch (RemoteException e) {
             System.out.println("Un problème est survenue lors de l'inscription du service dans l'annuaire : " + e);
         }
