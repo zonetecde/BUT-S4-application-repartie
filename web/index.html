@@ -39,7 +39,43 @@
                 <p class="text-lg"><strong>Actions</strong></p>
 
                 <div class="flex flex-col gap-y-4 mt-2">
-                    <button class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 cursor-pointer">Réserver une table pour le restaurant <span id="restaurant-name"></span></button>
+                    <p>Restaurant sélectionné : <strong><span id="restaurant-name"></span></strong></p>
+
+                    <div id="reservation-etape-1" class="bg-white p-4 rounded border border-blue-300 shadow-sm">
+                        <p class="font-semibold mb-2">1. Choisissez votre créneau</p>
+                        <label class="block mb-2">
+                            Nombre de personnes :
+                            <input type="number" id="reservation-personnes" class="w-full border rounded px-2 py-1" min="1" value="2" />
+                        </label>
+                        <label class="block mb-2">
+                            Date et heure :
+                            <input type="datetime-local" id="reservation-date" class="w-full border rounded px-2 py-1" />
+                        </label>
+                        <button class="bg-blue-500 text-white px-3 py-1 rounded" type="button" onclick="chercherTablesDispo()">Voir les tables disponibles</button>
+                    </div>
+
+                    <div id="reservation-tables" style="display: none;" class="bg-white p-4 rounded border border-blue-300 shadow-sm">
+                        <p class="font-semibold mb-2">2. Tables disponibles</p>
+                        <div id="liste-tables" class="flex flex-col gap-2"></div>
+                    </div>
+
+                    <div id="reservation-details" style="display: none;" class="bg-white p-4 rounded border border-blue-300 shadow-sm">
+                        <p class="font-semibold mb-2">3. Réservez la table sélectionnée</p>
+                        <p class="mb-2">Table choisie : <strong><span id="table-selectionnee"></span></strong></p>
+                        <label class="block mb-2">
+                            Nom du client :
+                            <input type="text" id="reservation-nom" class="w-full border rounded px-2 py-1" placeholder="Votre nom" />
+                        </label>
+                        <label class="block mb-2">
+                            Téléphone :
+                            <input type="tel" id="reservation-phone" class="w-full border rounded px-2 py-1" placeholder="06 00 00 00 00" />
+                        </label>
+                        <label class="block mb-2">
+                            Commentaire :
+                            <textarea id="reservation-notes" class="w-full border rounded px-2 py-1" placeholder="Allergies, demandes particulières..."></textarea>
+                        </label>
+                        <button class="bg-green-500 text-white px-3 py-1 rounded" type="button" onclick="envoyerReservation()">Réserver cette table</button>
+                    </div>
 
                     <button class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 cursor-pointer" onclick="cacherActions()">Retourner aux filtres</button>
                 </div>

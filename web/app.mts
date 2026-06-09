@@ -96,28 +96,9 @@ function updateMap() {
             const marker = L.marker([resto.lat, resto.lon], { icon: foodIcon }).addTo(map);
             marker.bindPopup(`<b>${resto.nom}</b><br>Adresse : ${resto.adresse}`);
 
-            // Pour les restaurants, on veut afficher un form de réservation
-            // de table lorsqu'on clique dessus.
             marker.on("click", (event: any) => {
                 console.log("Restaurant cliqué :", resto.nom, event);
-
-                // Cache la div de filtre
-                const filtresDiv = document.getElementById("filtres");
-                if (filtresDiv) {
-                    filtresDiv.style.display = "none";
-                }
-
-                // Affiche le formulaire de réservation
-                const reservationForm = document.getElementById("reservation-form");
-                if (reservationForm) {
-                    reservationForm.style.display = "block";
-                }
-
-                // Met le nom du restaurant dans le formulaire de réservation
-                const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
-                if (restaurantName) {
-                    restaurantName.innerText = resto.nom;
-                }
+                ouvrirReservation(resto);
             });
         });
     }
@@ -145,16 +126,198 @@ function updateMap() {
 
 (window as any).updateMap = updateMap; // Expose la fonction updateMap pour qu'elle puisse être appelée depuis le HTML
 
+let currentRestaurant: RestaurantResponse | null = null;
+let currentSelectedTable: { id: number; capacity: number; location: string } | null = null;
+
+function ouvrirReservation(resto: RestaurantResponse) {
+    currentRestaurant = resto;
+    currentSelectedTable = null;
+
+    const filtresDiv = document.getElementById("filtres");
+    if (filtresDiv) {
+        filtresDiv.style.display = "none";
+    }
+
+    const reservationForm = document.getElementById("reservation-form");
+    if (reservationForm) {
+        reservationForm.style.display = "block";
+    }
+
+    const restaurantName = document.getElementById("restaurant-name");
+    if (restaurantName) {
+        restaurantName.innerText = resto.nom;
+    }
+
+    const etape1 = document.getElementById("reservation-etape-1");
+    const tablesDiv = document.getElementById("reservation-tables");
+    const detailsDiv = document.getElementById("reservation-details");
+    if (etape1) {
+        etape1.style.display = "block";
+    }
+    if (tablesDiv) {
+        tablesDiv.style.display = "none";
+    }
+    if (detailsDiv) {
+        detailsDiv.style.display = "none";
+    }
+
+    const listeTables = document.getElementById("liste-tables");
+    if (listeTables) {
+        listeTables.innerHTML = "";
+    }
+    const tableSelectionnee = document.getElementById("table-selectionnee");
+    if (tableSelectionnee) {
+        tableSelectionnee.innerText = "Aucune table sélectionnée";
+    }
+}
+
+function getTablesForRestaurant(restaurantId: number) {
+    const baseTables = [
+        { id: 1, capacity: 2, location: "Fenêtre" },
+        { id: 2, capacity: 4, location: "Centre" },
+        { id: 3, capacity: 4, location: "Canapé" },
+        { id: 4, capacity: 6, location: "Privé" },
+        { id: 5, capacity: 8, location: "Grande table" },
+    ];
+    return baseTables.map((table) => ({
+        id: restaurantId * 10 + table.id,
+        capacity: table.capacity,
+        location: table.location,
+    }));
+}
+
+function tableEstReservee(tableId: number, dateHeure: string) {
+    const date = new Date(dateHeure);
+    if (isNaN(date.getTime())) {
+        return true;
+    }
+
+    return (tableId + date.getMinutes() + date.getHours()) % 3 === 0;
+}
+
+function chercherTablesDispo() {
+    if (!currentRestaurant) {
+        alert("Veuillez sélectionner d'abord un restaurant.");
+        return;
+    }
+
+    const personnes = parseInt((document.getElementById("reservation-personnes") as HTMLInputElement).value, 10);
+    const dateHeure = (document.getElementById("reservation-date") as HTMLInputElement).value;
+
+    if (!dateHeure || !personnes || personnes < 1) {
+        alert("Veuillez indiquer une date/heure valide et le nombre de personnes.");
+        return;
+    }
+
+    const tables = getTablesForRestaurant(currentRestaurant.idRestaurant).filter((table) => {
+        return table.capacity >= personnes && !tableEstReservee(table.id, dateHeure);
+    });
+
+    const listeTables = document.getElementById("liste-tables");
+    if (!listeTables) {
+        return;
+    }
+    listeTables.innerHTML = "";
+
+    if (tables.length === 0) {
+        listeTables.innerHTML = "<p>Aucune table disponible pour ce créneau (durée 2h).</p>";
+    } else {
+        tables.forEach((table) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "bg-blue-200 text-left px-3 py-2 rounded border border-blue-300 hover:bg-blue-300";
+            button.innerText = `Table ${table.id} — ${table.capacity} personnes — ${table.location}`;
+            button.onclick = () => selectTable(table.id);
+            listeTables.appendChild(button);
+        });
+    }
+
+    const tablesDiv = document.getElementById("reservation-tables");
+    if (tablesDiv) {
+        tablesDiv.style.display = "block";
+    }
+
+    const detailsDiv = document.getElementById("reservation-details");
+    if (detailsDiv) {
+        detailsDiv.style.display = "none";
+    }
+}
+
+function selectTable(tableId: number) {
+    if (!currentRestaurant) {
+        return;
+    }
+
+    const table = getTablesForRestaurant(currentRestaurant.idRestaurant).find((t) => t.id === tableId);
+    if (!table) {
+        return;
+    }
+
+    currentSelectedTable = table;
+
+    const tableSelectionnee = document.getElementById("table-selectionnee");
+    if (tableSelectionnee) {
+        tableSelectionnee.innerText = `Table ${table.id} — ${table.capacity} personnes — ${table.location}`;
+    }
+
+    const detailsDiv = document.getElementById("reservation-details");
+    if (detailsDiv) {
+        detailsDiv.style.display = "block";
+    }
+}
+
+function envoyerReservation() {
+    if (!currentRestaurant || !currentSelectedTable) {
+        alert("Veuillez sélectionner d'abord une table disponible.");
+        return;
+    }
+
+    const clientNom = (document.getElementById("reservation-nom") as HTMLInputElement).value;
+    const telephone = (document.getElementById("reservation-phone") as HTMLInputElement).value;
+    const notes = (document.getElementById("reservation-notes") as HTMLTextAreaElement).value;
+    const personnes = (document.getElementById("reservation-personnes") as HTMLInputElement).value;
+    const dateHeure = (document.getElementById("reservation-date") as HTMLInputElement).value;
+
+    if (!clientNom) {
+        alert("Veuillez indiquer le nom de la personne qui réserve.");
+        return;
+    }
+
+    alert(`Réservation confirmée pour ${clientNom} au restaurant ${currentRestaurant.nom}\nTable ${currentSelectedTable.id} — ${currentSelectedTable.capacity} personnes\n${dateHeure}\nNombre de personnes : ${personnes}\nTéléphone : ${telephone || "non précisé"}`);
+
+    cacherActions();
+}
+
+(window as any).chercherTablesDispo = chercherTablesDispo;
+(window as any).selectTable = selectTable;
+(window as any).envoyerReservation = envoyerReservation;
+
 (window as any).cacherActions = function () {
-    // Cache le formulaire de réservation
     const reservationForm = document.getElementById("reservation-form");
     if (reservationForm) {
         reservationForm.style.display = "none";
     }
 
-    // Affiche la div de filtre
     const filtresDiv = document.getElementById("filtres");
     if (filtresDiv) {
         filtresDiv.style.display = "block";
     }
+
+    const listeTables = document.getElementById("liste-tables");
+    if (listeTables) {
+        listeTables.innerHTML = "";
+    }
+
+    const tablesDiv = document.getElementById("reservation-tables");
+    if (tablesDiv) {
+        tablesDiv.style.display = "none";
+    }
+
+    const detailsDiv = document.getElementById("reservation-details");
+    if (detailsDiv) {
+        detailsDiv.style.display = "none";
+    }
+
+    currentRestaurant = null;
+    currentSelectedTable = null;
 };
