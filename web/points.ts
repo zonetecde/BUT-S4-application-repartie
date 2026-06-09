@@ -33,14 +33,7 @@ export async function recupererPointsGeo(proxyUrl: string): Promise<PointGeo[]> 
 /**
  * Ajoute un nouveau point géographique via le proxy
  */
-export async function ajouterPointGeo(
-    proxyUrl: string,
-    coordonneesX: number,
-    coordonneesY: number,
-    emoji: string,
-    titre: string,
-    description: string
-): Promise<PointGeo | null> {
+export async function ajouterPointGeo(proxyUrl: string, coordonneesX: number, coordonneesY: number, emoji: string, titre: string, description: string): Promise<PointGeo | null> {
     try {
         const params = new URLSearchParams({
             x: String(coordonneesX),
