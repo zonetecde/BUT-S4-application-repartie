@@ -17,7 +17,7 @@ public class LancerPointGeo {
         try {
             ServicePoint rd = (ServicePoint) UnicastRemoteObject.exportObject(service, 0);
 
-            Registry reg = LocateRegistry.createRegistry(1099);
+            Registry reg = LocateRegistry.getRegistry(1099);
             reg.rebind("pointgeo", rd);
 
             System.out.println("Service PointGeo enregistré dans l'annuaire RMI");
