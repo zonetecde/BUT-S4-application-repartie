@@ -52,19 +52,19 @@ public class Point implements Serializable {
         this.idPoint = idPoint;
     }
     
-    public double getCoordonneeX() {
+    public double getCoordonneesX() {
         return coordonneesX;
     }
     
-    public void setCoordonneeX(double coordonneesX) {
+    public void setCoordonneesX(double coordonneesX) {
         this.coordonneesX = coordonneesX;
     }
     
-    public double getCoordonneeY() {
+    public double getCoordonneesY() {
         return coordonneesY;
     }
     
-    public void setCoordonneeY(double coordonneesY) {
+    public void setCoordonneesY(double coordonneesY) {
         this.coordonneesY = coordonneesY;
     }
     
