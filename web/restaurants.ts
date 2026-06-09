@@ -31,3 +31,53 @@ export async function recupererRestoNancy(proxyUrl: string): Promise<RestaurantR
 
     return restaurants;
 }
+
+export interface TableDisponible {
+    idTable: number;
+    nbPlaces: number;
+}
+
+export async function recupererTablesRestaurant(nomRestaurant: string): Promise<TableDisponible[]> {
+    const url = `http://localhost:8081/api/restaurants/tables?nomRestaurant=${encodeURIComponent(nomRestaurant)}`;
+
+    const response = await fetch(url);
+    const json = await response.json();
+
+    if (!json.success && !json.succes) {
+        throw new Error(json.message);
+    }
+
+    return Object.entries(json.data).map(([idTable, nbPlaces]) => ({
+        idTable: Number(idTable),
+        nbPlaces: Number(nbPlaces),
+    }));
+}
+
+export async function reserverTableRestaurant(data: {
+    nomRestaurant: string;
+    idTable: number;
+    dateHeure: string;
+    nom: string;
+    prenom: string;
+    nombreConvives: number;
+    telephone: string;
+}) {
+    const params = new URLSearchParams();
+
+    params.append("nomRestaurant", data.nomRestaurant);
+    params.append("idTable", String(data.idTable));
+    params.append("dateHeure", data.dateHeure);
+    params.append("nom", data.nom);
+    params.append("prenom", data.prenom);
+    params.append("nombreConvives", String(data.nombreConvives));
+    params.append("telephone", data.telephone);
+
+    const response = await fetch(`http://localhost:8081/api/restaurants/reserver?${params.toString()}`, {
+        method: "POST",
+    });
+
+    const text = await response.text();
+    console.log("Réponse réservation :", text);
+
+    return JSON.parse(text);
+}
