@@ -53,7 +53,10 @@ public class Restaurant implements ServiceRestaurant {
      */
     public Reponse reserverTable(String nomRestaurant, int idTable, String dateHeure, String nom, String prenom, int nombreConvives, String telephone) {
         try {
-            dateHeure = dateHeure.replace('T', ' ');
+            dateHeure = dateHeure.replace('T', ' '); // datetime local retourne : 2026-06-10T19:00
+            if (!dateHeure.contains(":00")) {
+                dateHeure += ":00";
+            }
             Timestamp dateReservation = Timestamp.valueOf(dateHeure);
             Timestamp finReservation = new Timestamp(dateReservation.getTime() + 7200000); // On considère que la réservation dure 2h
             PreparedStatement st = conn.prepareStatement("SELECT idRestaurant FROM Restaurant WHERE nom = ?");
@@ -121,6 +124,9 @@ public class Restaurant implements ServiceRestaurant {
     public Reponse recupererTablesRestaurant(String nomRestaurant, String dateHeure, int nombreConvives) throws RemoteException {
         try {
             dateHeure = dateHeure.replace('T', ' ');
+            if (!dateHeure.contains(":00")) {
+                dateHeure += ":00";
+            }
             Timestamp dateReservation = Timestamp.valueOf(dateHeure);
             Timestamp finReservation = new Timestamp(dateReservation.getTime() + 7200000); // 2 heures de réservation
 
