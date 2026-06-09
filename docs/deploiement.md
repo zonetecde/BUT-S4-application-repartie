@@ -32,21 +32,19 @@ Copier ce `.jar` et le fichier `.env` sur **toutes** les machines qui vont hébe
 Le service Restaurant a besoin d'un accès à la base de données Oracle (fichier `.env` à placer dans le dossier courant).
 
 ```bash
-# 1. Lancer l'annuaire RMI en arrière-plan
-rmiregistry 1099 &
-
-# 2. Lancer le service Restaurant
 java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerRestaurant
 ```
 
 ## Machine B - Service Fetch
 
 ```bash
-# 1. Lancer l'annuaire RMI en arrière-plan
-rmiregistry 1099 &
-
-# 2. Lancer le service Fetch
 java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerFetch
+```
+
+## Machine C - Service Crous
+
+```bash
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerCrous
 ```
 
 ---
@@ -54,10 +52,6 @@ java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerFetch
 ## Machine C - Service Crous
 
 ```bash
-# 1. Lancer l'annuaire RMI en arrière-plan
-rmiregistry 1099 &
-
-# 2. Lancer le service Crous
 java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerCrous
 ```
 

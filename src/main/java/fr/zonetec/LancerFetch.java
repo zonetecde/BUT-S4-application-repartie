@@ -16,7 +16,13 @@ public class LancerFetch {
         try {
             ServiceFetch rd = (ServiceFetch) UnicastRemoteObject.exportObject(fetch, 0);
 
-            Registry reg = LocateRegistry.getRegistry("localhost");
+            // Crée ou récupère l'annuaire RMI
+            Registry reg;
+            try {
+                reg = LocateRegistry.createRegistry(1099);
+            } catch (RemoteException e) {
+                reg = LocateRegistry.getRegistry("localhost", 1099);
+            }
             reg.rebind("fetch", rd);
 
             System.out.println("Service Fetch enregistré dans l'annuaire RMI");
