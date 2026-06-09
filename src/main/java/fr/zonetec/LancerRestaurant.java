@@ -38,5 +38,17 @@ public class LancerRestaurant {
         } catch (RemoteException e) {
             System.out.println("Un problème est survenue lors de l'inscription du service dans l'annuaire : " + e);
         }
+
+        // Service RMI des Points géographiques
+        Points points = new Points();
+
+        try {
+            ServicePoint sp = (ServicePoint) UnicastRemoteObject.exportObject(points, 0);
+
+            Registry reg = LocateRegistry.getRegistry("localhost");
+            reg.rebind("point", sp);
+        } catch (RemoteException e) {
+            System.out.println("Un problème est survenue lors de l'inscription du service des points dans l'annuaire : " + e);
+        }
     }
 }

@@ -8,6 +8,7 @@ import {
     recupererReservations,
 } from "./restaurants.js";
 import { recupererCrousNancy, chargerMenu, Restaurant as RestaurantCrous } from "./crous.js";
+import { recupererPointsGeo, ajouterPointGeo, PointGeo } from "./points.js";
 
 // Demande l'adresse du proxy au démarrage
 const proxyHost = prompt("Adresse IP du proxy HTTP ?", "localhost");
@@ -25,7 +26,10 @@ let incidents: Incident[] = [];
 let velibs: StationVelib[] = [];
 let restaurants: RestaurantResponse[] = [];
 let crous: RestaurantCrous[] = [];
+let points: PointGeo[] = [];
 let map: any; // Carte Leaflet
+let addPointMode: boolean = false;
+let selectedEmoji: string = "📍";
 let positionActuelMarker: any = null; // Marker de la position utilisateur actuelle
 
 // On fetch la réponse de l'API
@@ -59,6 +63,9 @@ fetch(url)
 
             // Et on récupère aussi les incidents à Nancy (via le proxy)
             incidents = await recupererIncidentsNancy(proxyUrl);
+
+            // On récupère les points géographiques personnalisés (via le proxy)
+            points = await recupererPointsGeo(proxyUrl);
         } catch (error: any) {
             console.error("Erreur lors de la récupération des données :", error);
         }
@@ -241,6 +248,31 @@ function updateMap() {
             marker.bindPopup(`<b>${incident.type}</b><br>Description : ${incident.description}`);
         });
     }
+
+    // Affichage des points géographiques personnalisés
+    const filtrePoints = (document.getElementById("filtre-points") as HTMLInputElement)?.checked ?? true;
+
+    if (filtrePoints) {
+        points.forEach((point: PointGeo) => {
+            const pointIcon = L.divIcon({
+                html: `<div style="width: 32px; height: 32px; font-size: 20px; line-height: 32px; text-align: center;">${point.emoji}</div>`,
+                className: "",
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, -16],
+            });
+
+            const marker = L.marker([point.coordonneesY, point.coordonneesX], { icon: pointIcon }).addTo(map);
+            marker.bindPopup(`<b>${point.titre}</b><br>${point.description}`);
+        });
+    }
+
+    // Active l'écouteur de clic pour ajouter un point
+    if (addPointMode) {
+        map.on("click", (event: any) => handleMapClick(event));
+    } else {
+        map.off("click");
+    }
 }
 
 (window as any).updateMap = updateMap; // Expose la fonction updateMap pour qu'elle puisse être appelée depuis le HTML
@@ -251,6 +283,98 @@ function updateMap() {
 
 (window as any).cacherMenuCrous = function () {
     afficherPanneau("filtres");
+};
+
+/**
+ * Gère le clic sur la carte pour ajouter un point
+ */
+function handleMapClick(event: any): void {
+    const lat = event.latlng.lat;
+    const lon = event.latlng.lng;
+
+    afficherPanneau("add-point-form");
+
+    // Stocke les coordonnées
+    (window as any).currentLat = lat;
+    (window as any).currentLon = lon;
+
+    // Met les coordonnées dans le formulaire
+    const coordsDisplay = document.getElementById("coords-display");
+    if (coordsDisplay) {
+        coordsDisplay.innerText = `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+    }
+}
+
+/**
+ * Valide et ajoute le point
+ */
+(window as any).validerAjoutPoint = async function () {
+    const titre = (document.getElementById("point-titre") as HTMLInputElement).value;
+    const description = (document.getElementById("point-description") as HTMLTextAreaElement).value;
+
+    if (!titre) {
+        alert("Veuillez entrer un titre");
+        return;
+    }
+
+    const lat = (window as any).currentLat;
+    const lon = (window as any).currentLon;
+
+    const newPoint = await ajouterPointGeo(proxyUrl, lon, lat, selectedEmoji, titre, description);
+
+    if (newPoint) {
+        points.push(newPoint);
+        console.log("Point ajouté :", newPoint);
+
+        // Réinitialise le formulaire
+        (document.getElementById("point-titre") as HTMLInputElement).value = "";
+        (document.getElementById("point-description") as HTMLTextAreaElement).value = "";
+
+        // Réaffiche la carte
+        updateMap();
+        afficherPanneau("filtres");
+    } else {
+        alert("Erreur lors de l'ajout du point");
+    }
+};
+
+/**
+ * Active/désactive le mode ajout de point
+ */
+(window as any).activerAjoutPoint = function () {
+    addPointMode = !addPointMode;
+    const button = document.getElementById("btn-add-point") as HTMLButtonElement;
+
+    if (addPointMode) {
+        button.style.backgroundColor = "#fca5a5";
+        button.innerText = "Ajouter un point (en cours...) - Cliquez sur la carte";
+        alert("Mode ajout de point activé. Cliquez sur un endroit de la carte.");
+    } else {
+        button.style.backgroundColor = "#bfdbfe";
+        button.innerText = "Ajouter un point";
+        map.off("click");
+    }
+
+    updateMap();
+};
+
+/**
+ * Change l'emoji sélectionné
+ */
+(window as any).changeEmoji = function (emoji: string) {
+    selectedEmoji = emoji;
+
+    const emojiButtons = document.querySelectorAll<HTMLButtonElement>(".emoji-btn");
+
+    emojiButtons.forEach((btn) => {
+        if (btn.textContent?.trim() === emoji) {
+            btn.classList.add("border-4", "border-blue-600");
+            btn.classList.remove("border-2", "border-blue-300");
+        } else {
+            btn.classList.remove("border-4", "border-blue-600");
+            btn.classList.add("border-2", "border-blue-300");
+        }
+    });
 };
 
 (window as any).afficherTablesDisponibles = async function () {

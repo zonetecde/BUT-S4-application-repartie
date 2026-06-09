@@ -23,7 +23,8 @@ public class ProxyServeur {
      * @param args args[0]=port HTTP,
      *             args[1]=hôte RMI Restaurant, args[2]=port RMI Restaurant,
      *             args[3]=hôte RMI Crous,     args[4]=port RMI Crous,
-     *             args[5]=hôte RMI Fetch,     args[6]=port RMI Fetch
+     *             args[5]=hôte RMI Fetch,     args[6]=port RMI Fetch,
+     *             args[7]=hôte RMI PointGeo,  args[8]=port RMI PointGeo
      * @throws IOException si le serveur HTTP ne peut pas démarrer
      * @throws NotBoundException si un service RMI n'est pas enregistré
      */
@@ -44,6 +45,10 @@ public class ProxyServeur {
         String fetchHost = args.length > 5 ? args[5] : "localhost";
         int fetchPort = args.length > 6 ? Integer.parseInt(args[6]) : 1099;
 
+        // IP et Port où est exposé le service RMI PointGeo
+        String pointGeoHost = args.length > 7 ? args[7] : "localhost";
+        int pointGeoPort = args.length > 8 ? Integer.parseInt(args[8]) : 1099;
+
         // Récupère l'annuaire RMI et le service Restaurant
         Registry regRestaurant = LocateRegistry.getRegistry(restaurantHost, restaurantPort);
         ServiceRestaurant serviceRestaurant = (ServiceRestaurant) regRestaurant.lookup("restaurant");
@@ -55,6 +60,10 @@ public class ProxyServeur {
         // Récupère l'annuaire RMI du service Fetch
         Registry regFetch = LocateRegistry.getRegistry(fetchHost, fetchPort);
         ServiceFetch serviceFetch = (ServiceFetch) regFetch.lookup("fetch");
+
+        // Récupère l'annuaire RMI du service PointGeo
+        Registry regPointGeo = LocateRegistry.getRegistry(pointGeoHost, pointGeoPort);
+        ServicePoint servicePointGeo = (ServicePoint) regPointGeo.lookup("pointgeo");
 
         // Créer et configure le serveur HTTP
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -224,6 +233,51 @@ public class ProxyServeur {
             // Appel la méthode du service RMI Crous
             Reponse response = serviceCrous.chargerMenu(idRestaurant);
             sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
+        });
+
+        // Crée l'endpoint pour récupérer tous les points géographiques
+        server.createContext("/api/points/list", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            try {
+                sendJson(exchange, 200, new Reponse(true, "Points récupérés", servicePointGeo.recupererTousLesPoints()).toJson());
+            } catch (Exception e) {
+                sendJson(exchange, 500, new Reponse(false, "Erreur : " + e.getMessage(), null).toJson());
+            }
+        });
+
+        // Crée l'endpoint pour ajouter un point géographique
+        server.createContext("/api/points/add", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            Map<String, String> params = getQueryParams(exchange);
+            double x = Double.parseDouble(params.getOrDefault("x", "0"));
+            double y = Double.parseDouble(params.getOrDefault("y", "0"));
+            String emoji = params.getOrDefault("emoji", "📍");
+            String titre = params.getOrDefault("titre", "");
+            String description = params.getOrDefault("description", "");
+
+            try {
+                Point p = servicePointGeo.ajouterPoint(x, y, emoji, titre, description);
+                sendJson(exchange, p != null ? 200 : 400,
+                        new Reponse(p != null, p != null ? "Point ajouté" : "Erreur lors de l'ajout", p).toJson());
+            } catch (Exception e) {
+                sendJson(exchange, 500, new Reponse(false, "Erreur : " + e.getMessage(), null).toJson());
+            }
         });
 
         server.start();
