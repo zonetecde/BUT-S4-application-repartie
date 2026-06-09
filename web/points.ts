@@ -64,8 +64,3 @@ export async function ajouterPointGeo(
         return null;
     }
 }
-    } catch (error: any) {
-        console.error("Erreur lors de l'appel au proxy :", error);
-        return false;
-    }
-}

@@ -122,6 +122,46 @@
     return dataMenu.data;
   }
 
+  // points.ts
+  async function recupererPointsGeo(proxyUrl2) {
+    try {
+      const response = await fetch(`${proxyUrl2}/api/points/list`);
+      const data = await response.json();
+      if (data.success) {
+        return data.data || [];
+      } else {
+        console.error("Erreur lors de la r\xE9cup\xE9ration des points :", data.message);
+        return [];
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'appel au proxy :", error);
+      return [];
+    }
+  }
+  async function ajouterPointGeo(proxyUrl2, coordonneesX, coordonneesY, emoji, titre, description) {
+    try {
+      const params = new URLSearchParams({
+        x: String(coordonneesX),
+        y: String(coordonneesY),
+        emoji,
+        titre,
+        description
+      });
+      const response = await fetch(`${proxyUrl2}/api/points/add?${params}`, { method: "POST" });
+      const data = await response.json();
+      if (data.success) {
+        console.log("Point ajout\xE9");
+        return data.data;
+      } else {
+        console.error("Erreur lors de l'ajout du point :", data.message);
+        return null;
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'appel au proxy :", error);
+      return null;
+    }
+  }
+
   // app.mts
   var proxyHost = prompt("Adresse IP du proxy HTTP ?", "localhost");
   var proxyPort = prompt("Port du proxy HTTP ?", "8081");
@@ -131,7 +171,10 @@
   var velibs = [];
   var restaurants = [];
   var crous = [];
+  var points = [];
   var map;
+  var addPointMode = false;
+  var selectedEmoji = "\u{1F4CD}";
   var positionActuelMarker = null;
   fetch(url).then((response) => response.json()).then(async (data) => {
     const lon = data.features[0].geometry.coordinates[0];
@@ -147,6 +190,7 @@
       crous = await recupererCrousNancy(proxyUrl);
       restaurants = await recupererRestoNancy(proxyUrl);
       incidents = await recupererIncidentsNancy(proxyUrl);
+      points = await recupererPointsGeo(proxyUrl);
     } catch (error) {
       console.error("Erreur lors de la r\xE9cup\xE9ration des donn\xE9es :", error);
     }
@@ -280,6 +324,25 @@
         marker.bindPopup(`<b>${incident.type}</b><br>Description : ${incident.description}`);
       });
     }
+    const filtrePoints = document.getElementById("filtre-points")?.checked ?? true;
+    if (filtrePoints) {
+      points.forEach((point) => {
+        const pointIcon = L.divIcon({
+          html: `<div style="width: 32px; height: 32px; font-size: 20px; line-height: 32px; text-align: center;">${point.emoji}</div>`,
+          className: "",
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+          popupAnchor: [0, -16]
+        });
+        const marker = L.marker([point.coordonneesY, point.coordonneesX], { icon: pointIcon }).addTo(map);
+        marker.bindPopup(`<b>${point.titre}</b><br>${point.description}`);
+      });
+    }
+    if (addPointMode) {
+      map.on("click", (event) => handleMapClick(event));
+    } else {
+      map.off("click");
+    }
   }
   window.updateMap = updateMap;
   window.cacherActions = function() {
@@ -287,6 +350,65 @@
   };
   window.cacherMenuCrous = function() {
     afficherPanneau("filtres");
+  };
+  function handleMapClick(event) {
+    const lat = event.latlng.lat;
+    const lon = event.latlng.lng;
+    afficherPanneau("add-point-form");
+    window.currentLat = lat;
+    window.currentLon = lon;
+    const coordsDisplay = document.getElementById("coords-display");
+    if (coordsDisplay) {
+      coordsDisplay.innerText = `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+    }
+  }
+  window.validerAjoutPoint = async function() {
+    const titre = document.getElementById("point-titre").value;
+    const description = document.getElementById("point-description").value;
+    if (!titre) {
+      alert("Veuillez entrer un titre");
+      return;
+    }
+    const lat = window.currentLat;
+    const lon = window.currentLon;
+    const newPoint = await ajouterPointGeo(proxyUrl, lon, lat, selectedEmoji, titre, description);
+    if (newPoint) {
+      points.push(newPoint);
+      console.log("Point ajout\xE9 :", newPoint);
+      document.getElementById("point-titre").value = "";
+      document.getElementById("point-description").value = "";
+      updateMap();
+      afficherPanneau("filtres");
+    } else {
+      alert("Erreur lors de l'ajout du point");
+    }
+  };
+  window.activerAjoutPoint = function() {
+    addPointMode = !addPointMode;
+    const button = document.getElementById("btn-add-point");
+    if (addPointMode) {
+      button.style.backgroundColor = "#fca5a5";
+      button.innerText = "Ajouter un point (en cours...) - Cliquez sur la carte";
+      alert("Mode ajout de point activ\xE9. Cliquez sur un endroit de la carte.");
+    } else {
+      button.style.backgroundColor = "#bfdbfe";
+      button.innerText = "Ajouter un point";
+      map.off("click");
+    }
+    updateMap();
+  };
+  window.changeEmoji = function(emoji) {
+    selectedEmoji = emoji;
+    const emojiButtons = document.querySelectorAll(".emoji-btn");
+    emojiButtons.forEach((btn) => {
+      if (btn.textContent?.trim() === emoji) {
+        btn.classList.add("border-4", "border-blue-600");
+        btn.classList.remove("border-2", "border-blue-300");
+      } else {
+        btn.classList.remove("border-4", "border-blue-600");
+        btn.classList.add("border-2", "border-blue-300");
+      }
+    });
   };
   window.afficherTablesDisponibles = async function() {
     const restaurantName = document.getElementById("restaurant-name");
