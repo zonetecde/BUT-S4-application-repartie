@@ -56,7 +56,7 @@ public class Points implements ServicePoint {
             
             stmt.setDouble(1, coordonneesX);
             stmt.setDouble(2, coordonneesY);
-            stmt.setString(3, emoji);
+            stmt.setNString(3, emoji);
             stmt.setString(4, titre);
             stmt.setString(5, description);
             stmt.registerOutParameter(6, Types.INTEGER);
