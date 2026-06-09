@@ -27,6 +27,12 @@ Copier ce `.jar` et le fichier `.env` sur **toutes** les machines qui vont hébe
 
 ---
 
+# Sur chaque machine, avant de lancer le programme faire :
+
+```bash
+CLASSPATH="target/classes:target/restaurant-rmi-server.jar" rmiregistry 1099 &
+```
+
 ## Machine A - Service Restaurant
 
 Le service Restaurant a besoin d'un accès à la base de données Oracle (fichier `.env` à placer dans le dossier courant).
