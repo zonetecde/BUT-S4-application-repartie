@@ -3,6 +3,12 @@ import { Incident, recupererIncidentsNancy } from "./incidents.js";
 import { recupererRestoNancy, RestaurantResponse } from "./restaurants.js";
 import { recupererCrousNancy, chargerMenu, Restaurant as RestaurantCrous } from "./crous.js";
 
+// Demande l'adresse du proxy au démarrage
+const proxyHost = prompt("Adresse IP du proxy HTTP ?", "localhost");
+const proxyPort = prompt("Port du proxy HTTP ?", "8081");
+// Par défaut c'est localhost 8081
+const proxyUrl = `http://${proxyHost || "localhost"}:${proxyPort || "8081"}`;
+
 // On commence par récupérer les coordonnées de Nancy via l'API https://adresse.data.gouv.fr/outils/api-doc/adresse
 const url = "https://data.geopf.fr/geocodage/search?q=Nancy&limit=1";
 
@@ -40,17 +46,14 @@ fetch(url)
             velibs = await recupererVelibsNancy();
 
             // On récupère les restaurants du CROUS à Nancy (bonus)
-            crous = await recupererCrousNancy();
+            crous = await recupererCrousNancy(proxyUrl);
 
             // On récupère les informations sur les restaurants à Nancy
-            restaurants = await recupererRestoNancy();
+            restaurants = await recupererRestoNancy(proxyUrl);
 
-            // Et on récupère aussi les incidents à Nancy
-            incidents = await recupererIncidentsNancy();
+            // Et on récupère aussi les incidents à Nancy (via le proxy)
+            incidents = await recupererIncidentsNancy(proxyUrl);
         } catch (error: any) {
-            // C'est un catch controllé : quand on travail sur nos machines,
-            // recupererIncidentsNancy ne fonctionne pas car on a pas accès au proxy
-            // java.
             console.error("Erreur lors de la récupération des données :", error);
         }
 
@@ -188,7 +191,7 @@ function updateMap() {
                 }
 
                 try {
-                    const menu = await chargerMenu(restoCrous.code);
+                    const menu = await chargerMenu(proxyUrl, restoCrous.code);
                     const menuContent = document.getElementById("menu-content");
                     if (menuContent) {
                         menuContent.innerText = menu.menu || "Aucun menu disponible.";
