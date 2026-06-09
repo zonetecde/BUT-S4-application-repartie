@@ -76,6 +76,17 @@ public class InitDataBase {
             " CONSTRAINT fk_contient_plat FOREIGN KEY (idPlat) REFERENCES Plat(idPlat)" +
             ")";
 
+        String pointGeoTable =
+            "CREATE TABLE Point_Geo (" +
+            " idPoint NUMBER(3) GENERATED AS IDENTITY," +
+            " coordonneesX NUMBER(9,6) NOT NULL," +
+            " coordonneesY NUMBER(9,6) NOT NULL," +
+            " emoji VARCHAR2(10) NOT NULL," +
+            " titre VARCHAR2(100) NOT NULL," +
+            " description VARCHAR2(500)," +
+            " CONSTRAINT pk_point_geo PRIMARY KEY (idPoint)" +
+            ")";
+
         try (Statement stmt = connection.createStatement()) {
             
             executeTable(stmt, restaurantTable, "Restaurant");
@@ -84,6 +95,7 @@ public class InitDataBase {
             executeTable(stmt, commandeTable, "Commande");
             executeTable(stmt, platTable, "Plat");
             executeTable(stmt, contientTable, "Contient");
+            executeTable(stmt, pointGeoTable, "Point_Geo");
             
         } catch (SQLException e) {
             System.err.println("Erreur lors de la création des tables : " + e.getMessage());

@@ -36,6 +36,13 @@
 
                 <input type="checkbox" id="filtre-crous" checked class="mr-2" onchange="updateMap()" />
                 <label for="filtre-crous">Afficher les restaurants Crous</label><br />
+
+                <input type="checkbox" id="filtre-points" checked class="mr-2" onchange="updateMap()" />
+                <label for="filtre-points">Afficher mes points</label><br />
+
+                <div class="mt-4">
+                    <button id="btn-add-point" class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 cursor-pointer" onclick="activerAjoutPoint()">Ajouter un point</button>
+                </div>
             </section>
 
             <section class="w-1/3 bg-blue-100 rounded-xl p-4 border-4 border-blue-300 shadow-2xl shadow-gray-600" id="reservation-form" style="display: none">
@@ -56,6 +63,42 @@
                 <pre class="whitespace-pre-wrap font-sans text-sm" id="menu-content"></pre>
 
                 <button class="bg-yellow-200 px-3 py-1 rounded border-2 border-yellow-400 cursor-pointer mt-4" onclick="cacherMenuCrous()">Retourner aux filtres</button>
+            </section>
+
+            <section class="w-1/3 bg-green-50 rounded-xl p-4 border-4 border-green-400 shadow-2xl shadow-gray-600 overflow-y-auto" id="add-point-form" style="display: none">
+                <p class="text-lg"><strong>Ajouter un point 📍</strong></p>
+
+                <div class="mt-3 p-2 bg-blue-100 rounded border border-blue-300">
+                    <p class="text-sm font-semibold">Localisation :</p>
+                    <p class="text-sm" id="coords-display">En attente du clic...</p>
+                </div>
+
+                <div class="mt-3">
+                    <label class="text-sm font-semibold">Choisir un emoji :</label>
+                    <div class="flex gap-2 mt-2 flex-wrap">
+                        <button class="emoji-btn border-4 border-blue-600 px-3 py-2 rounded text-xl cursor-pointer bg-white" onclick="changeEmoji('📍')">📍</button>
+                        <button class="emoji-btn border-2 border-blue-300 px-3 py-2 rounded text-xl cursor-pointer bg-white" onclick="changeEmoji('⭐')">⭐</button>
+                        <button class="emoji-btn border-2 border-blue-300 px-3 py-2 rounded text-xl cursor-pointer bg-white" onclick="changeEmoji('🏞️')">🏞️</button>
+                        <button class="emoji-btn border-2 border-blue-300 px-3 py-2 rounded text-xl cursor-pointer bg-white" onclick="changeEmoji('🌲')">🌲</button>
+                        <button class="emoji-btn border-2 border-blue-300 px-3 py-2 rounded text-xl cursor-pointer bg-white" onclick="changeEmoji('🎣')">🎣</button>
+                        <button class="emoji-btn border-2 border-blue-300 px-3 py-2 rounded text-xl cursor-pointer bg-white" onclick="changeEmoji('📸')">📸</button>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label for="point-titre" class="text-sm font-semibold">Titre :</label>
+                    <input type="text" id="point-titre" class="w-full px-2 py-1 border border-gray-300 rounded mt-1" placeholder="Entrez un titre" />
+                </div>
+
+                <div class="mt-3">
+                    <label for="point-description" class="text-sm font-semibold">Description :</label>
+                    <textarea id="point-description" class="w-full px-2 py-1 border border-gray-300 rounded mt-1 h-20" placeholder="Entrez une description (optionnel)"></textarea>
+                </div>
+
+                <div class="flex gap-2 mt-4">
+                    <button class="bg-green-200 px-3 py-1 rounded border-2 border-green-400 cursor-pointer flex-1" onclick="validerAjoutPoint()">Ajouter 👍</button>
+                    <button class="bg-red-200 px-3 py-1 rounded border-2 border-red-400 cursor-pointer flex-1" onclick="activerAjoutPoint(); afficherPanneau('filtres')">Annuler ❌</button>
+                </div>
             </section>
         </div>
     </body>
