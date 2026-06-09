@@ -109,6 +109,7 @@
   var restaurants = [];
   var crous = [];
   var map;
+  var userMarker = null;
   fetch(url).then((response) => response.json()).then(async (data) => {
     const lon = data.features[0].geometry.coordinates[0];
     const lat = data.features[0].geometry.coordinates[1];
@@ -127,6 +128,7 @@
       console.error("Erreur lors de la r\xE9cup\xE9ration des donn\xE9es :", error);
     }
     updateMap();
+    localiserUtilisateur();
   });
   function afficherPanneau(panelId) {
     const panels = ["filtres", "reservation-form", "menu-crous"];
@@ -137,9 +139,33 @@
     const panel = document.getElementById(panelId);
     if (panel) panel.style.display = "block";
   }
+  function localiserUtilisateur() {
+    if (!navigator.geolocation) {
+      console.warn("G\xE9olocalisation non support\xE9e par le navigateur");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const userIcon = L.divIcon({
+          html: '<div style="width: 28px; height: 28px; font-size: 16px; line-height: 24px; text-align: center; background: #dbeafe; border: 2px solid #2563eb; border-radius: 50%;">\u{1F9D1}</div>',
+          className: "",
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+          popupAnchor: [0, -14]
+        });
+        userMarker = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
+        userMarker.bindPopup("<b>Vous \xEAtes ici</b>");
+        userMarker.openPopup();
+      },
+      (error) => {
+        console.warn("G\xE9olocalisation refus\xE9e ou indisponible :", error.message);
+      }
+    );
+  }
   function updateMap() {
     map.eachLayer((layer) => {
-      if (layer instanceof L.Marker) {
+      if (layer instanceof L.Marker && layer !== userMarker) {
         map.removeLayer(layer);
       }
     });

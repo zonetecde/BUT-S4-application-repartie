@@ -14,6 +14,7 @@ let velibs: StationVelib[] = [];
 let restaurants: RestaurantResponse[] = [];
 let crous: RestaurantCrous[] = [];
 let map: any; // Carte Leaflet
+let positionActuelMarker: any = null; // Marker de la position utilisateur actuelle
 
 // On fetch la réponse de l'API
 fetch(url)
@@ -55,6 +56,9 @@ fetch(url)
 
         // Affiche la carte
         updateMap();
+
+        // Demande la position de l'utilisateur pour l'afficher sur la carte
+        localiserUtilisateur();
     });
 
 /**
@@ -74,10 +78,33 @@ function afficherPanneau(panelId: string): void {
     if (panel) panel.style.display = "block";
 }
 
+function localiserUtilisateur() {
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
+
+            const userIcon = L.divIcon({
+                html: '<div style="width: 28px; height: 28px; font-size: 16px; line-height: 24px; text-align: center; background: #dbeafe; border: 2px solid #2563eb; border-radius: 50%;">🧑</div>',
+                className: "",
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                popupAnchor: [0, -14],
+            });
+
+            positionActuelMarker = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
+            positionActuelMarker.bindPopup("<b>Vous êtes ici</b>");
+            positionActuelMarker.openPopup();
+        },
+        (error) => {
+            console.log("Veuillez autoriser la géolocalisation pour afficher votre position sur la carte." + error);
+        }
+    );
+}
+
 function updateMap() {
     // Clear tous les markers de la carte avant de les réafficher
     map.eachLayer((layer: any) => {
-        if (layer instanceof L.Marker) {
+        if (layer instanceof L.Marker && layer !== positionActuelMarker) {
             map.removeLayer(layer);
         }
     });
