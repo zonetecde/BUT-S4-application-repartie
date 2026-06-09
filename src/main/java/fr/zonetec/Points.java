@@ -1,7 +1,6 @@
 package fr.zonetec;
 
 import java.rmi.RemoteException;
-import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 
@@ -52,24 +51,21 @@ public class Points implements ServicePoint {
         
         try {
             Connection conn = ConnectionBuilder.createConnection();
-            String query = "INSERT INTO Point_Geo (coordonneesX, coordonneesY, emoji, titre, description) VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+            String query = "BEGIN INSERT INTO Point_Geo (coordonneesX, coordonneesY, emoji, titre, description) VALUES (?, ?, ?, ?, ?) RETURNING idPoint INTO ?; END;";
+            CallableStatement stmt = conn.prepareCall(query);
             
-            stmt.setBigDecimal(1, BigDecimal.valueOf(coordonneesX));
-            stmt.setBigDecimal(2, BigDecimal.valueOf(coordonneesY));
+            stmt.setDouble(1, coordonneesX);
+            stmt.setDouble(2, coordonneesY);
             stmt.setString(3, emoji);
             stmt.setString(4, titre);
             stmt.setString(5, description);
+            stmt.registerOutParameter(6, Types.INTEGER);
             
             stmt.executeUpdate();
             
-            // Récupère l'ID généré
-            ResultSet rs = stmt.getGeneratedKeys();
-            if (rs.next()) {
-                int idPoint = rs.getInt(1);
-                newPoint = new Point(idPoint, coordonneesX, coordonneesY, emoji, titre, description);
-                System.out.println("Point ajouté avec l'ID : " + idPoint);
-            }
+            int idPoint = stmt.getInt(6);
+            newPoint = new Point(idPoint, coordonneesX, coordonneesY, emoji, titre, description);
+            System.out.println("Point ajouté avec l'ID : " + idPoint);
             
             conn.close();
         } catch (SQLException e) {
