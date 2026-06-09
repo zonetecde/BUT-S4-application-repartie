@@ -388,8 +388,7 @@
     const button = document.getElementById("btn-add-point");
     if (addPointMode) {
       button.style.backgroundColor = "#fca5a5";
-      button.innerText = "Ajouter un point (en cours...) - Cliquez sur la carte";
-      alert("Mode ajout de point activ\xE9. Cliquez sur un endroit de la carte.");
+      button.innerText = "Cliquez sur la carte";
     } else {
       button.style.backgroundColor = "#bfdbfe";
       button.innerText = "Ajouter un point";

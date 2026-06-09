@@ -10,6 +10,4 @@ import java.util.ArrayList;
 public interface ServicePoint extends Remote {
     ArrayList<Point> recupererTousLesPoints() throws RemoteException;
     Point ajouterPoint(double coordonneesX, double coordonneesY, String emoji, String titre, String description) throws RemoteException;
-    boolean supprimerPoint(int idPoint) throws RemoteException;
-    Point recupererPoint(int idPoint) throws RemoteException;
 }

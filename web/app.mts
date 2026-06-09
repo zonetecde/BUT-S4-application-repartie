@@ -341,8 +341,7 @@ function handleMapClick(event: any): void {
 
     if (addPointMode) {
         button.style.backgroundColor = "#fca5a5";
-        button.innerText = "Ajouter un point (en cours...) - Cliquez sur la carte";
-        alert("Mode ajout de point activé. Cliquez sur un endroit de la carte.");
+        button.innerText = "Cliquez sur la carte";
     } else {
         button.style.backgroundColor = "#bfdbfe";
         button.innerText = "Ajouter un point";
