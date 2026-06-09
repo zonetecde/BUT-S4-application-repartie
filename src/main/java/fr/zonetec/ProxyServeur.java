@@ -121,8 +121,25 @@ public class ProxyServeur {
                 return;
             }
 
-            // Appel la méthode du service RMI et envoie la réponse au client
-            Reponse response = serviceRestaurant.recupererTablesRestaurant(getQueryParams(exchange).get("nomRestaurant"));
+            Map<String, String> params = getQueryParams(exchange);
+            if (!params.containsKey("nomRestaurant") || !params.containsKey("dateHeure") || !params.containsKey("nombreConvives")) {
+                sendJson(exchange, 400, new Reponse(false, "Paramètres nomRestaurant, dateHeure et nombreConvives requis", null).toJson());
+                return;
+            }
+
+            int nombreConvives;
+            try {
+                nombreConvives = Integer.parseInt(params.get("nombreConvives"));
+            } catch (NumberFormatException e) {
+                sendJson(exchange, 400, new Reponse(false, "Paramètre nombreConvives invalide", null).toJson());
+                return;
+            }
+
+            Reponse response = serviceRestaurant.recupererTablesRestaurant(
+                    params.get("nomRestaurant"),
+                    params.get("dateHeure"),
+                    nombreConvives
+            );
             sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
         });
 

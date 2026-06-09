@@ -53,8 +53,9 @@ public class Restaurant implements ServiceRestaurant {
      */
     public Reponse reserverTable(String nomRestaurant, int idTable, String dateHeure, String nom, String prenom, int nombreConvives, String telephone) {
         try {
+            dateHeure = dateHeure.replace('T', ' ');
             Timestamp dateReservation = Timestamp.valueOf(dateHeure);
-            Timestamp finReservation = new Timestamp(dateReservation.getTime() + 3600000); // On considère que la réservation dure 1h, on ajoute donc 3600000ms à la date de début pour obtenir la date de fin
+            Timestamp finReservation = new Timestamp(dateReservation.getTime() + 7200000); // On considère que la réservation dure 2h
             PreparedStatement st = conn.prepareStatement("SELECT idRestaurant FROM Restaurant WHERE nom = ?");
             st.setString(1, nomRestaurant);
             ResultSet rs = st.executeQuery();
@@ -68,7 +69,7 @@ public class Restaurant implements ServiceRestaurant {
             st = conn.prepareStatement(
                     "SELECT COUNT(*) FROM Reservation " +
                             "WHERE idRestaurant = ? AND idTable = ? " +
-                            "AND dateRes < ? AND dateRes + 1/24 > ?"
+                            "AND dateRes < ? AND dateRes + 2/24 > ?"
             );
             st.setInt(1, idRest);
             st.setInt(2, idTable);
@@ -117,10 +118,12 @@ public class Restaurant implements ServiceRestaurant {
      * @param nomRestaurant nom du restaurant
      * @return réponse JSON contenant un dictionnaire idTable => nombre de places
      */
-    public Reponse recupererTablesRestaurant (String nomRestaurant) throws RemoteException {
-        //on initalise la connexion
+    public Reponse recupererTablesRestaurant(String nomRestaurant, String dateHeure, int nombreConvives) throws RemoteException {
         try {
-            //on verifie l'existence du restaurant
+            dateHeure = dateHeure.replace('T', ' ');
+            Timestamp dateReservation = Timestamp.valueOf(dateHeure);
+            Timestamp finReservation = new Timestamp(dateReservation.getTime() + 7200000); // 2 heures de réservation
+
             PreparedStatement st = conn.prepareStatement("SELECT idRestaurant FROM Restaurant WHERE nom = ?");
             st.setString(1, nomRestaurant);
             ResultSet rs = st.executeQuery();
@@ -128,29 +131,39 @@ public class Restaurant implements ServiceRestaurant {
                 conn.rollback();
                 return new Reponse(false, "Le restaurant n'existe pas", null);
             }
-            //on verifier la disponibilité des tables
+            int idRest = rs.getInt("idRestaurant");
+
             st = conn.prepareStatement(
                     "SELECT t.idTable, t.nbPlaces " +
                             "FROM Table_Resto t " +
-                            "JOIN Restaurant r ON t.idRestaurant = r.idRestaurant " +
-                            "WHERE r.nom = ? AND t.reservee = 0 FOR UPDATE NOWAIT" // Mot clé nowait comme ça si c'est lock par une autre demande on attend pas
+                            "WHERE t.idRestaurant = ? AND t.nbPlaces >= ? " +
+                            "AND t.idTable NOT IN (" +
+                            "    SELECT idTable FROM Reservation " +
+                            "    WHERE idRestaurant = ? " +
+                            "      AND dateRes < ? " +
+                            "      AND dateRes + 2/24 > ? " +
+                            ")"
             );
-            st.setString(1, nomRestaurant);
+            st.setInt(1, idRest);
+            st.setInt(2, nombreConvives);
+            st.setInt(3, idRest);
+            st.setTimestamp(4, finReservation);
+            st.setTimestamp(5, dateReservation);
             rs = st.executeQuery();
             if (!rs.next()) {
-                conn.rollback();
-                return new Reponse(false, "Aucune table disponible", null);
+                return new Reponse(false, "Aucune table disponible pour ce créneau", null);
             }
-            HashMap<Integer, Integer> tables = new HashMap<>() ;
-            tables.put(rs.getInt(1),rs.getInt(2));
+            HashMap<Integer, Integer> tables = new HashMap<>();
+            tables.put(rs.getInt(1), rs.getInt(2));
             while (rs.next()) {
-                tables.put(rs.getInt(1),rs.getInt(2));
+                tables.put(rs.getInt(1), rs.getInt(2));
             }
             return new Reponse(true, "", tables);
-        }   catch (SQLException e) {
+        } catch (IllegalArgumentException e) {
+            return new Reponse(false, "Date de réservation invalide", null);
+        } catch (SQLException e) {
             try {
                 conn.rollback();
-                // Si le code d'erreur est 54 c'est que la ligne est verrouillée par une autre transaction, donc qu'une autre personne est en train de réserver
                 if (e.getErrorCode() == 54) {
                     return new Reponse(false, "Veuillez patienter, quelqu'un est déjà en train de réserver une table", null);
                 }

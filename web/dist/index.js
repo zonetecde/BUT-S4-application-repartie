@@ -176,57 +176,57 @@
       tableSelectionnee.innerText = "Aucune table s\xE9lectionn\xE9e";
     }
   }
-  function getTablesForRestaurant(restaurantId) {
-    const baseTables = [
-      { id: 1, capacity: 2, location: "Fen\xEAtre" },
-      { id: 2, capacity: 4, location: "Centre" },
-      { id: 3, capacity: 4, location: "Canap\xE9" },
-      { id: 4, capacity: 6, location: "Priv\xE9" },
-      { id: 5, capacity: 8, location: "Grande table" }
-    ];
-    return baseTables.map((table) => ({
-      id: restaurantId * 10 + table.id,
-      capacity: table.capacity,
-      location: table.location
-    }));
-  }
-  function tableEstReservee(tableId, dateHeure) {
-    const date = new Date(dateHeure);
-    if (isNaN(date.getTime())) {
-      return true;
-    }
-    return (tableId + date.getMinutes() + date.getHours()) % 3 === 0;
-  }
-  function chercherTablesDispo() {
+  var currentAvailableTables = [];
+  async function chercherTablesDispo() {
     if (!currentRestaurant) {
-      alert("Veuillez s\xE9lectionner d'abord un restaurant.");
+      alert("S\xE9lectionner d'abord un restaurant.");
       return;
     }
     const personnes = parseInt(document.getElementById("reservation-personnes").value, 10);
     const dateHeure = document.getElementById("reservation-date").value;
     if (!dateHeure || !personnes || personnes < 1) {
-      alert("Veuillez indiquer une date/heure valide et le nombre de personnes.");
+      alert("Il faut indiquer une date/heure valide et le nombre de personnes.");
       return;
     }
-    const tables = getTablesForRestaurant(currentRestaurant.idRestaurant).filter((table) => {
-      return table.capacity >= personnes && !tableEstReservee(table.id, dateHeure);
+    const params = new URLSearchParams({
+      nomRestaurant: currentRestaurant.nom,
+      dateHeure,
+      nombreConvives: personnes.toString()
     });
+    const url2 = `http://localhost:8081/api/restaurants/tables?${params.toString()}`;
     const listeTables = document.getElementById("liste-tables");
     if (!listeTables) {
       return;
     }
-    listeTables.innerHTML = "";
-    if (tables.length === 0) {
-      listeTables.innerHTML = "<p>Aucune table disponible pour ce cr\xE9neau (dur\xE9e 2h).</p>";
-    } else {
-      tables.forEach((table) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "bg-blue-200 text-left px-3 py-2 rounded border border-blue-300 hover:bg-blue-300";
-        button.innerText = `Table ${table.id} \u2014 ${table.capacity} personnes \u2014 ${table.location}`;
-        button.onclick = () => selectTable(table.id);
-        listeTables.appendChild(button);
-      });
+    try {
+      const response = await fetch(url2);
+      const json = await response.json();
+      if (!response.ok || !json.success) {
+        listeTables.innerHTML = `<p class="text-red-600">${json.message || "Impossible de r\xE9cup\xE9rer les tables disponibles."}</p>`;
+        currentAvailableTables = [];
+      } else {
+        const data = json.data;
+        currentAvailableTables = Object.entries(data).map(([id, capacity]) => ({
+          id: Number(id),
+          capacity: Number(capacity)
+        }));
+        listeTables.innerHTML = "";
+        if (currentAvailableTables.length === 0) {
+          listeTables.innerHTML = "<p>Aucune table disponible pour ce cr\xE9neau.</p>";
+        } else {
+          currentAvailableTables.forEach((table) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "bg-blue-200 text-left px-3 py-2 rounded border border-blue-300 hover:bg-blue-300";
+            button.innerText = `Table ${table.id} \u2014 ${table.capacity} personnes`;
+            button.onclick = () => selectTable(table.id);
+            listeTables.appendChild(button);
+          });
+        }
+      }
+    } catch (error) {
+      listeTables.innerHTML = '<p class="text-red-600">Erreur de connexion au serveur.</p>';
+      currentAvailableTables = [];
     }
     const tablesDiv = document.getElementById("reservation-tables");
     if (tablesDiv) {
@@ -238,43 +238,59 @@
     }
   }
   function selectTable(tableId) {
-    if (!currentRestaurant) {
-      return;
-    }
-    const table = getTablesForRestaurant(currentRestaurant.idRestaurant).find((t) => t.id === tableId);
+    const table = currentAvailableTables.find((t) => t.id === tableId);
     if (!table) {
       return;
     }
     currentSelectedTable = table;
     const tableSelectionnee = document.getElementById("table-selectionnee");
     if (tableSelectionnee) {
-      tableSelectionnee.innerText = `Table ${table.id} \u2014 ${table.capacity} personnes \u2014 ${table.location}`;
+      tableSelectionnee.innerText = `Table ${table.id} \u2014 ${table.capacity} personnes`;
     }
     const detailsDiv = document.getElementById("reservation-details");
     if (detailsDiv) {
       detailsDiv.style.display = "block";
     }
   }
-  function envoyerReservation() {
+  async function envoyerReservation() {
     if (!currentRestaurant || !currentSelectedTable) {
       alert("Veuillez s\xE9lectionner d'abord une table disponible.");
       return;
     }
-    const clientNom = document.getElementById("reservation-nom").value;
-    const telephone = document.getElementById("reservation-phone").value;
-    const notes = document.getElementById("reservation-notes").value;
-    const personnes = document.getElementById("reservation-personnes").value;
+    const prenom = document.getElementById("reservation-prenom").value.trim();
+    const nom = document.getElementById("reservation-nom").value.trim();
+    const telephone = document.getElementById("reservation-phone").value.trim();
+    const personnes = parseInt(document.getElementById("reservation-personnes").value, 10);
     const dateHeure = document.getElementById("reservation-date").value;
-    if (!clientNom) {
-      alert("Veuillez indiquer le nom de la personne qui r\xE9serve.");
+    if (!prenom || !nom) {
+      alert("Veuillez indiquer le pr\xE9nom et le nom de la personne qui r\xE9serve.");
       return;
     }
-    alert(`R\xE9servation confirm\xE9e pour ${clientNom} au restaurant ${currentRestaurant.nom}
+    const params = new URLSearchParams({
+      nomRestaurant: currentRestaurant.nom,
+      idTable: currentSelectedTable.id.toString(),
+      dateHeure,
+      nom,
+      prenom,
+      nombreConvives: personnes.toString(),
+      telephone
+    });
+    const url2 = `http://localhost:8081/api/restaurants/reserver?${params.toString()}`;
+    try {
+      const response = await fetch(url2, { method: "POST" });
+      const json = await response.json();
+      if (!response.ok || !json.success) {
+        alert(`Erreur : ${json.message || "La r\xE9servation n'a pas pu \xEAtre enregistr\xE9e."}`);
+        return;
+      }
+      alert(`R\xE9servation confirm\xE9e pour ${prenom} ${nom} au restaurant ${currentRestaurant.nom}
 Table ${currentSelectedTable.id} \u2014 ${currentSelectedTable.capacity} personnes
 ${dateHeure}
-Nombre de personnes : ${personnes}
-T\xE9l\xE9phone : ${telephone || "non pr\xE9cis\xE9"}`);
-    cacherActions();
+Nombre de personnes : ${personnes}`);
+      cacherActions();
+    } catch (error) {
+      alert("Erreur de connexion au serveur lors de l'enregistrement de la r\xE9servation.");
+    }
   }
   window.chercherTablesDispo = chercherTablesDispo;
   window.selectTable = selectTable;
@@ -300,8 +316,15 @@ T\xE9l\xE9phone : ${telephone || "non pr\xE9cis\xE9"}`);
     if (detailsDiv) {
       detailsDiv.style.display = "none";
     }
+    document.getElementById("reservation-prenom").value = "";
+    document.getElementById("reservation-nom").value = "";
+    document.getElementById("reservation-phone").value = "";
+    document.getElementById("reservation-notes").value = "";
+    document.getElementById("reservation-date").value = "";
+    document.getElementById("reservation-personnes").value = "2";
     currentRestaurant = null;
     currentSelectedTable = null;
+    currentAvailableTables = [];
   };
 })();
 //# sourceMappingURL=index.js.map
