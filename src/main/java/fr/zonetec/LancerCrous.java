@@ -16,13 +16,8 @@ public class LancerCrous {
         try {
             ServiceCrous rd = (ServiceCrous) UnicastRemoteObject.exportObject(crous, 0);
 
-            // Crée ou récupère l'annuaire RMI
-            Registry reg;
-            try {
-                reg = LocateRegistry.createRegistry(1099);
-            } catch (RemoteException e) {
-                reg = LocateRegistry.getRegistry("localhost", 1099);
-            }
+            // récupère l'annuaire RMI
+            Registry reg = LocateRegistry.getRegistry("localhost", 1099);
             reg.rebind("crous", rd);
 
             System.out.println("Service CROUS enregistré dans l'annuaire RMI");

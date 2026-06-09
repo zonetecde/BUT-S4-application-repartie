@@ -30,13 +30,8 @@ public class LancerRestaurant {
         try {
             ServiceRestaurant rd = (ServiceRestaurant) UnicastRemoteObject.exportObject(lc, 0);
 
-            // Crée ou récupère l'annuaire RMI
-            Registry reg;
-            try {
-                reg = LocateRegistry.createRegistry(1099);
-            } catch (RemoteException e) {
-                reg = LocateRegistry.getRegistry("localhost", 1099);
-            }
+            // récupère l'annuaire RMI
+            Registry reg = LocateRegistry.getRegistry("localhost", 1099);
             reg.rebind("restaurant", rd);
 
             System.out.println("Service Restaurant enregistré dans l'annuaire RMI");
