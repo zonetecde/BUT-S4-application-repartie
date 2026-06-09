@@ -1,6 +1,7 @@
 package fr.zonetec;
 
 import java.rmi.RemoteException;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 
@@ -54,8 +55,8 @@ public class Points implements ServicePoint {
             String query = "INSERT INTO Point_Geo (coordonneesX, coordonneesY, emoji, titre, description) VALUES (?, ?, ?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
             
-            stmt.setDouble(1, coordonneesX);
-            stmt.setDouble(2, coordonneesY);
+            stmt.setBigDecimal(1, BigDecimal.valueOf(coordonneesX));
+            stmt.setBigDecimal(2, BigDecimal.valueOf(coordonneesY));
             stmt.setString(3, emoji);
             stmt.setString(4, titre);
             stmt.setString(5, description);
