@@ -401,6 +401,13 @@ function handleMapClick(event: any): void {
     });
 };
 
+/**
+ * Convertit une valeur date en l'arrondissant à l'heure
+ */
+function convertirDateHeure(value: string): string {
+    return value.slice(0, 13).replace("T", " ") + ":00:00";
+}
+
 (window as any).afficherTablesDisponibles = async function (utiliserTablesChargees = false) {
     const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
     const tablesDiv = document.getElementById("tables-dispo");
@@ -414,7 +421,7 @@ function handleMapClick(event: any): void {
     }
 
     const nomRestaurant = restaurantName.innerText;
-    const dateHeure = dateInput.value.replace("T", " ") + ":00";
+    const dateHeure = convertirDateHeure(dateInput.value);
 
     tablesDiv.innerHTML = "Chargement des tables disponibles...";
     tablesDiv.classList.remove("hidden");
@@ -474,7 +481,7 @@ function handleMapClick(event: any): void {
         return;
     }
 
-    const dateHeure = dateInput.value.replace("T", " ") + ":00";
+    const dateHeure = convertirDateHeure(dateInput.value);
 
     const resultat = await reserverTableRestaurant({
         nomRestaurant: restaurantName.innerText,

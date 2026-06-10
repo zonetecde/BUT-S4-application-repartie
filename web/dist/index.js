@@ -446,6 +446,9 @@
       }
     });
   };
+  function convertirDateHeure(value) {
+    return value.slice(0, 13).replace("T", " ") + ":00:00";
+  }
   window.afficherTablesDisponibles = async function(utiliserTablesChargees = false) {
     const restaurantName = document.getElementById("restaurant-name");
     const tablesDiv = document.getElementById("tables-dispo");
@@ -456,7 +459,7 @@
       return;
     }
     const nomRestaurant = restaurantName.innerText;
-    const dateHeure = dateInput.value.replace("T", " ") + ":00";
+    const dateHeure = convertirDateHeure(dateInput.value);
     tablesDiv.innerHTML = "Chargement des tables disponibles...";
     tablesDiv.classList.remove("hidden");
     try {
@@ -506,7 +509,7 @@
       alert("Veuillez remplir tous les champs.");
       return;
     }
-    const dateHeure = dateInput.value.replace("T", " ") + ":00";
+    const dateHeure = convertirDateHeure(dateInput.value);
     const resultat = await reserverTableRestaurant({
       nomRestaurant: restaurantName.innerText,
       idTable,
