@@ -88,6 +88,7 @@ public class ProxyServeur {
             }
 
             // Appel la méthode du service RMI et envoie la réponse au client
+            System.out.println("[LOG] Proxy : GET /api/restaurants/coordonnees -> recupererCoordonneesRestaurantsNancy()");
             sendJson(exchange, 200, serviceRestaurant.recupererCoordonneesRestaurantsNancy().toJson());
         });
 
@@ -130,6 +131,7 @@ public class ProxyServeur {
             }
 
             // Appel la méthode du service RMI et envoie la réponse au client
+            System.out.println("[LOG] Proxy : POST /api/restaurants/reserver -> reserverTable()");
             Reponse response = serviceRestaurant.reserverTable(
                     params.get("nomRestaurant"),
                     idTable,
@@ -155,6 +157,7 @@ public class ProxyServeur {
             }
 
             // Appel la méthode du service RMI et envoie la réponse au client
+            System.out.println("[LOG] Proxy : GET /api/restaurants/tables -> recupererTablesRestaurant()");
             Map<String, String> params = getQueryParams(exchange);
 
             if (!params.containsKey("nomRestaurant")) {
@@ -186,6 +189,7 @@ public class ProxyServeur {
             }
 
             Map<String, String> params = getQueryParams(exchange);
+            System.out.println("[LOG] Proxy : POST /api/restaurants/tables/liberer -> libererTablesRestaurant()");
             Reponse response = serviceRestaurant.libererTablesRestaurant(params.get("nomRestaurant"), params.get("dateHeure"));
             sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
         });
@@ -202,6 +206,7 @@ public class ProxyServeur {
                 return;
             }
 
+            System.out.println("[LOG] Proxy : GET /api/restaurants/reservations -> recupererReservations()");
             Reponse response = serviceRestaurant.recupererReservations();
 
             sendJson(
@@ -223,6 +228,7 @@ public class ProxyServeur {
             }
 
             // Appel la méthode du service RMI et envoie la réponse au client
+            System.out.println("[LOG] Proxy : GET /api/fetch -> fetch()");
             Reponse response = serviceFetch.fetch(getQueryParams(exchange).get("url"));
             sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
         });
@@ -239,6 +245,7 @@ public class ProxyServeur {
             }
 
             // Appel la méthode du service RMI Crous
+            System.out.println("[LOG] Proxy : GET /api/crous/restaurants -> recupererRestaurants()");
             Reponse response = serviceCrous.recupererRestaurants(getQueryParams(exchange).get("ville"));
             sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
         });
@@ -270,6 +277,7 @@ public class ProxyServeur {
             }
 
             // Appel la méthode du service RMI Crous
+            System.out.println("[LOG] Proxy : GET /api/crous/menu -> chargerMenu()");
             Reponse response = serviceCrous.chargerMenu(idRestaurant);
             sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
         });
@@ -286,6 +294,7 @@ public class ProxyServeur {
             }
 
             try {
+                System.out.println("[LOG] Proxy : GET /api/points/list -> recupererTousLesPoints()");
                 sendJson(exchange, 200, new Reponse(true, "Points récupérés", servicePointGeo.recupererTousLesPoints()).toJson());
             } catch (Exception e) {
                 sendJson(exchange, 500, new Reponse(false, "Erreur : " + e.getMessage(), null).toJson());
@@ -311,6 +320,7 @@ public class ProxyServeur {
             String description = params.getOrDefault("description", "");
 
             try {
+                System.out.println("[LOG] Proxy : POST /api/points/add -> ajouterPoint()");
                 Point p = servicePointGeo.ajouterPoint(x, y, emoji, titre, description);
                 sendJson(exchange, p != null ? 200 : 400,
                         new Reponse(p != null, p != null ? "Point ajouté" : "Erreur lors de l'ajout", p).toJson());
@@ -325,10 +335,11 @@ public class ProxyServeur {
             }
 
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                sendJson(exchange, 405, new Reponse(false, "MÃ©thode non autorisÃ©e", null).toJson());
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisé", null).toJson());
                 return;
             }
 
+            System.out.println("[LOG] Proxy : GET /api/services/documentation/restaurant");
             sendHtml(exchange, 200, serviceRestaurant.chargerDocumentation());
         });
 
@@ -338,10 +349,11 @@ public class ProxyServeur {
             }
 
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                sendJson(exchange, 405, new Reponse(false, "MÃ©thode non autorisÃ©e", null).toJson());
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisé", null).toJson());
                 return;
             }
 
+            System.out.println("[LOG] Proxy : GET /api/services/documentation/crous");
             sendHtml(exchange, 200, serviceCrous.chargerDocumentation());
         });
 
@@ -351,10 +363,11 @@ public class ProxyServeur {
             }
 
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                sendJson(exchange, 405, new Reponse(false, "MÃ©thode non autorisÃ©e", null).toJson());
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisé", null).toJson());
                 return;
             }
 
+            System.out.println("[LOG] Proxy : GET /api/services/documentation/fetch");
             sendHtml(exchange, 200, serviceFetch.chargerDocumentation());
         });
 
@@ -364,10 +377,11 @@ public class ProxyServeur {
             }
 
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                sendJson(exchange, 405, new Reponse(false, "MÃ©thode non autorisÃ©e", null).toJson());
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisé", null).toJson());
                 return;
             }
 
+            System.out.println("[LOG] Proxy : GET /api/services/documentation/pointgeo");
             sendHtml(exchange, 200, servicePointGeo.chargerDocumentation());
         });
 

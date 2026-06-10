@@ -14,6 +14,7 @@ public class Points implements ServicePoint {
      * @return documentation HTML du service
      */
     public String chargerDocumentation() {
+        System.out.println("[LOG] Appel de chargerDocumentation()");
         return """
                 <section>
                     <h2 class="text-xl font-bold mb-3">Service PointGeo</h2>
@@ -42,6 +43,7 @@ public class Points implements ServicePoint {
      */
     @Override
     public ArrayList<Point> recupererTousLesPoints() throws RemoteException {
+        System.out.println("[LOG] Appel de recupererTousLesPoints()");
         ArrayList<Point> points = new ArrayList<>();
         
         try {
@@ -75,6 +77,7 @@ public class Points implements ServicePoint {
      */
     @Override
     public Point ajouterPoint(double coordonneesX, double coordonneesY, String emoji, String titre, String description) throws RemoteException {
+        System.out.println("[LOG] Appel de ajouterPoint() avec les paramètres : coordonneesX=" + coordonneesX + ", coordonneesY=" + coordonneesY + ", emoji=" + emoji + ", titre=" + titre + ", description=" + description);
         Point newPoint = null;
         
         try {

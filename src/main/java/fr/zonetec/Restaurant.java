@@ -21,6 +21,7 @@ public class Restaurant implements ServiceRestaurant {
      * @return documentation HTML du service
      */
     public String chargerDocumentation() {
+        System.out.println("[LOG] Appel de chargerDocumentation()");
         return """
                 <section>
                     <h2 class="text-xl font-bold mb-3">Service Restaurant</h2>
@@ -55,6 +56,7 @@ public class Restaurant implements ServiceRestaurant {
      * @return réponse JSON
      */
     public Reponse recupererCoordonneesRestaurantsNancy() {
+        System.out.println("[LOG] Appel de recupererCoordonneesRestaurantsNancy()");
         try {
             Connection conn = ConnectionBuilder.createConnection();
 
@@ -92,6 +94,7 @@ public class Restaurant implements ServiceRestaurant {
      * @return réponse JSON
      */
     public Reponse reserverTable(String nomRestaurant, int idTable, String dateHeure, String nom, String prenom, int nombreConvives, String telephone) {
+        System.out.println("[LOG] Appel de reserverTable() avec les paramètres : nomRestaurant=" + nomRestaurant + ", idTable=" + idTable + ", dateHeure=" + dateHeure + ", nom=" + nom + ", prenom=" + prenom + ", nombreConvives=" + nombreConvives + ", telephone=" + telephone);
         try {
             Timestamp dateReservation = Timestamp.valueOf(dateHeure);
             Timestamp finReservation = new Timestamp(dateReservation.getTime() + 3600000); // On considère que la réservation dure 1h, on ajoute donc 3600000ms à la date de début pour obtenir la date de fin
@@ -187,6 +190,7 @@ public class Restaurant implements ServiceRestaurant {
      * @return réponse JSON contenant un dictionnaire idTable => nombre de places
      */
     public Reponse recupererTablesRestaurant (String nomRestaurant, String dateHeure) throws RemoteException {
+        System.out.println("[LOG] Appel de recupererTablesRestaurant() avec les paramètres : nomRestaurant=" + nomRestaurant + ", dateHeure=" + dateHeure);
         boolean verrouPris = false;
         // lock seulement le resto pr la meme date/heure
         String reservationKey = nomRestaurant + "|" + dateHeure;
@@ -267,6 +271,7 @@ public class Restaurant implements ServiceRestaurant {
      * @return réponse JSON confirmant la liberation
      */
     public Reponse libererTablesRestaurant(String nomRestaurant, String dateHeure) throws RemoteException {
+        System.out.println("[LOG] Appel de libererTablesRestaurant() avec les paramètres : nomRestaurant=" + nomRestaurant + ", dateHeure=" + dateHeure);
         if (nomRestaurant != null && dateHeure != null) {
             RESTAURANTS_EN_RESERVATION.remove(nomRestaurant + "|" + dateHeure);
         }
@@ -280,6 +285,7 @@ public class Restaurant implements ServiceRestaurant {
     }
 
     public Reponse recupererReservations() {
+        System.out.println("[LOG] Appel de recupererReservations()");
         try {
             ArrayList<HashMap<String, Object>> reservations = new ArrayList<>();
 

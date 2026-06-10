@@ -17,6 +17,7 @@ public class Crous implements ServiceCrous {
      * @return documentation HTML du service
      */
     public String chargerDocumentation() {
+        System.out.println("[LOG] Appel de chargerDocumentation()");
         return """
                 <section>
                     <h2 class="text-xl font-bold mb-3">Service CROUS</h2>
@@ -46,6 +47,7 @@ public class Crous implements ServiceCrous {
      * @return réponse JSON contenant la liste des restaurants
      */
     public Reponse recupererRestaurants(String ville) {
+        System.out.println("[LOG] Appel de recupererRestaurants() avec les paramètres : ville=" + ville);
         try {
             // 1. On récupère toutes les régions
             String regionsJson = HttpClientUtils.fetchUrl("https://api.croustillant.menu/v1/regions");
@@ -101,6 +103,7 @@ public class Crous implements ServiceCrous {
      * @return réponse JSON contenant le menu
      */
     public Reponse chargerMenu(int idRestaurant) {
+        System.out.println("[LOG] Appel de chargerMenu() avec les paramètres : idRestaurant=" + idRestaurant);
         try {
             String menuJson = HttpClientUtils.fetchUrl("https://api.croustillant.menu/v1/restaurants/" + idRestaurant + "/menu");
             JSONObject menuResponse = new JSONObject(menuJson);

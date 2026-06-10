@@ -19,6 +19,7 @@ public class Documentation implements ServiceDocumentation {
      */
     @Override
     public String chargerDocumentation() {
+        System.out.println("[LOG] Appel de chargerDocumentation()");
         return """
                 <section>
                     <h2 class="text-xl font-bold mb-3">Service Documentation</h2>
@@ -54,6 +55,7 @@ public class Documentation implements ServiceDocumentation {
      */
     @Override
     public Reponse chargerDocumentation(String service) {
+        System.out.println("[LOG] Appel de chargerDocumentation() avec les paramètres : service=" + service);
         try {
             String html;
             switch (service.toLowerCase()) {

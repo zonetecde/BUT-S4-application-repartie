@@ -12,6 +12,7 @@ public class Fetch implements ServiceFetch {
      * @return documentation HTML du service
      */
     public String chargerDocumentation() {
+        System.out.println("[LOG] Appel de chargerDocumentation()");
         return """
                 <section>
                     <h2 class="text-xl font-bold mb-3">Service Fetch</h2>
@@ -43,6 +44,7 @@ public class Fetch implements ServiceFetch {
      * @return réponse JSON
      */
     public Reponse fetch(String url) {
+        System.out.println("[LOG] Appel de fetch() avec les paramètres : url=" + url);
         try {
             String body = HttpClientUtils.fetchUrl(url);
             return new Reponse(true, null, body);
