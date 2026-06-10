@@ -19,22 +19,22 @@ public class Crous implements ServiceCrous {
     public String chargerDocumentation() {
         return """
                 <section>
-                    <h2>Service CROUS</h2>
-                    <p>
+                    <h2 class="text-xl font-bold mb-3">Service CROUS</h2>
+                    <p class="text-sm mb-2">
                         Le service CROUS sert à afficher les restaurants universitaires et leurs menus. Le site demande
                         d'abord les restaurants pour une ville, par exemple Nancy. Le service interroge l'API CROUS,
                         cherche la région qui correspond à cette ville, puis récupère les restaurants de cette région.
                     </p>
-                    <p>
+                    <p class="text-sm mb-2">
                         Quand l'utilisateur clique sur un restaurant CROUS, le proxy demande ensuite au service de charger
                         le menu. La réponse de l'API contient beaucoup d'objets imbriqués. Le service transforme donc ces
                         données en un texte simple, avec la date et les plats classés par repas et par catégorie.
                     </p>
-                    <p>
+                    <p class="text-sm mb-2">
                         Le service CROUS est donc un traducteur entre l'API externe et notre application. Il cache les détails
                         compliqués de l'API et renvoie des données plus faciles à afficher dans le navigateur.
                     </p>
-                    <img src="static/schema-service-crous.png" alt="Schéma du service CROUS" />
+                    <img src="static/schema-service-crous.png" alt="Schéma du service CROUS" class="my-3 rounded shadow-md max-w-full" />
                 </section>
                 """;
     }

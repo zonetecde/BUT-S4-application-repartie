@@ -16,23 +16,23 @@ public class Points implements ServicePoint {
     public String chargerDocumentation() {
         return """
                 <section>
-                    <h2>Service PointGeo</h2>
-                    <p>
+                    <h2 class="text-xl font-bold mb-3">Service PointGeo</h2>
+                    <p class="text-sm mb-2">
                         Le service PointGeo sert à gérer les points ajoutés par les utilisateurs sur la carte. Un point
                         contient des coordonnées, un emoji, un titre et une description. Ces informations sont stockées
                         dans la base de données pour pouvoir les retrouver plus tard.
                     </p>
-                    <p>
+                    <p class="text-sm mb-2">
                         Quand le site charge la carte, le proxy appelle le service PointGeo pour récupérer tous les points.
                         Le service lit la table Point_Geo, transforme chaque ligne en objet Point, puis renvoie la liste
                         au navigateur.
                     </p>
-                    <p>
+                    <p class="text-sm mb-2">
                         Quand un utilisateur ajoute un point, le site envoie les coordonnées et le texte au proxy. Le proxy
                         appelle ensuite le service PointGeo. Le service insère le point en base, récupère l'identifiant créé,
                         puis renvoie le nouveau point pour que la carte puisse l'afficher directement.
                     </p>
-                    <img src="static/schema-service-pointgeo.png" alt="Schéma du service PointGeo" />
+                    <img src="static/schema-service-pointgeo.png" alt="Schéma du service PointGeo" class="my-3 rounded shadow-md max-w-full" />
                 </section>
                 """;
     }

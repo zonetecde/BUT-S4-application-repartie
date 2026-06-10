@@ -21,10 +21,26 @@ public class Documentation implements ServiceDocumentation {
     public String chargerDocumentation() {
         return """
                 <section>
-                    <h2>Documentation du système</h2>
-                    <p>
-                        Ce système est une application répartie utilisant RMI pour connecter
-                        plusieurs services : Restaurant, CROUS, Fetch et PointGeo.
+                    <h2 class="text-xl font-bold mb-3">Service Documentation</h2>
+                    <p class="text-sm mb-2">
+                        Le service Documentation est le <strong>point d'entrée centralisé</strong> pour consulter la
+                        documentation de tous les autres services de l'application. Il joue le rôle d'intermédiaire
+                        entre le navigateur et les services RMI.
+                    </p>
+                    <p class="text-sm mb-2">
+                        Quand l'utilisateur clique sur un bouton dans le panneau de documentation, le navigateur
+                        appelle le proxy HTTP sur <code>/api/documentation/{service}</code>. Le proxy transmet alors
+                        la demande au service Documentation via RMI avec le nom du service demandé.
+                    </p>
+                    <p class="text-sm mb-2">
+                        Le service Documentation reçoit ce nom et fait à son tour une requête HTTP vers le proxy
+                        sur l'endpoint interne <code>/api/services/documentation/{service}</code>. Cet endpoint
+                        appelle directement la méthode <code>chargerDocumentation()</code> du service RMI concerné
+                        (Restaurant, CROUS, Fetch ou PointGeo), qui retourne sa propre documentation HTML.
+                    </p>
+                    <p class="text-sm mb-2">
+                        Pour sa propre documentation (celle que vous lisez), le service ne fait pas d'appel HTTP :
+                        il retourne directement ce texte, évitant ainsi une boucle infinie.
                     </p>
                 </section>
                 """;
