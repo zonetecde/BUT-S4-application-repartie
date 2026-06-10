@@ -63,11 +63,11 @@
     }));
     return restaurants2;
   }
-  async function recupererTablesRestaurant(nomRestaurant, dateHeure) {
+  async function recupererTablesRestaurant(proxyUrl2, nomRestaurant, dateHeure) {
     const params = new URLSearchParams();
     params.append("nomRestaurant", nomRestaurant);
     params.append("dateHeure", dateHeure);
-    const response = await fetch(`http://localhost:8081/api/restaurants/tables?${params.toString()}`);
+    const response = await fetch(`${proxyUrl2}/api/restaurants/tables?${params.toString()}`);
     const json = await response.json();
     if (!json.success && !json.succes) {
       throw new Error(json.message);
@@ -77,18 +77,18 @@
       nbPlaces: Number(nbPlaces)
     }));
   }
-  async function libererTablesRestaurant(nomRestaurant, dateHeure) {
+  async function libererTablesRestaurant(proxyUrl2, nomRestaurant, dateHeure) {
     const params = new URLSearchParams();
     params.append("nomRestaurant", nomRestaurant);
     params.append("dateHeure", dateHeure);
-    const url2 = `http://localhost:8081/api/restaurants/tables/liberer?${params.toString()}`;
+    const url2 = `${proxyUrl2}/api/restaurants/tables/liberer?${params.toString()}`;
     const response = await fetch(url2, { method: "POST" });
     const json = await response.json();
     if (!json.success && !json.succes) {
       throw new Error(json.message);
     }
   }
-  async function reserverTableRestaurant(data) {
+  async function reserverTableRestaurant(proxyUrl2, data) {
     const params = new URLSearchParams();
     params.append("nomRestaurant", data.nomRestaurant);
     params.append("idTable", String(data.idTable));
@@ -97,15 +97,15 @@
     params.append("prenom", data.prenom);
     params.append("nombreConvives", String(data.nombreConvives));
     params.append("telephone", data.telephone);
-    const response = await fetch(`http://localhost:8081/api/restaurants/reserver?${params.toString()}`, {
+    const response = await fetch(`${proxyUrl2}/api/restaurants/reserver?${params.toString()}`, {
       method: "POST"
     });
     const text = await response.text();
     console.log("R\xE9ponse r\xE9servation :", text);
     return JSON.parse(text);
   }
-  async function recupererReservations() {
-    const response = await fetch("http://localhost:8081/api/restaurants/reservations");
+  async function recupererReservations(proxyUrl2) {
+    const response = await fetch(`${proxyUrl2}/api/restaurants/reservations`);
     const json = await response.json();
     if (!json.success) {
       throw new Error(json.message);
@@ -369,7 +369,7 @@
     const restaurantName = document.getElementById("restaurant-name");
     if (reservationLockActif && restaurantName?.innerText && dateHeureReservationEnCours) {
       try {
-        await libererTablesRestaurant(restaurantName.innerText, dateHeureReservationEnCours);
+        await libererTablesRestaurant(proxyUrl, restaurantName.innerText, dateHeureReservationEnCours);
       } catch (error) {
         console.log("Erreur lors de la liberation du verrou :", error);
       }
@@ -489,12 +489,12 @@
     try {
       const memeCreneau = reservationLockActif && dateHeureReservationEnCours === dateHeure;
       if (reservationLockActif && !memeCreneau && dateHeureReservationEnCours) {
-        await libererTablesRestaurant(nomRestaurant, dateHeureReservationEnCours);
+        await libererTablesRestaurant(proxyUrl, nomRestaurant, dateHeureReservationEnCours);
         reservationLockActif = false;
         tablesDisponiblesEnCours = [];
         dateHeureReservationEnCours = null;
       }
-      const tables = memeCreneau ? tablesDisponiblesEnCours : await recupererTablesRestaurant(nomRestaurant, dateHeure);
+      const tables = memeCreneau ? tablesDisponiblesEnCours : await recupererTablesRestaurant(proxyUrl, nomRestaurant, dateHeure);
       if (tables.length === 0) {
         tablesDiv.innerHTML = "Aucune table disponible sur ce cr\xE9neau.";
         return;
@@ -534,7 +534,7 @@
       return;
     }
     const dateHeure = convertirDateHeure(dateInput.value);
-    const resultat = await reserverTableRestaurant({
+    const resultat = await reserverTableRestaurant(proxyUrl, {
       nomRestaurant: restaurantName.innerText,
       idTable,
       dateHeure,
@@ -588,7 +588,7 @@
     if (!reservationsList) return;
     reservationsList.innerHTML = "Chargement...";
     try {
-      const reservations = await recupererReservations();
+      const reservations = await recupererReservations(proxyUrl);
       if (reservations.length === 0) {
         reservationsList.innerHTML = "Aucune r\xE9servation.";
         return;

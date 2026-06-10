@@ -284,7 +284,7 @@ function updateMap() {
 
     if (reservationLockActif && restaurantName?.innerText && dateHeureReservationEnCours) {
         try {
-            await libererTablesRestaurant(restaurantName.innerText, dateHeureReservationEnCours);
+            await libererTablesRestaurant(proxyUrl, restaurantName.innerText, dateHeureReservationEnCours);
         } catch (error: any) {
             console.log("Erreur lors de la liberation du verrou :", error);
         }
@@ -473,12 +473,12 @@ function convertirDateHeure(value: string): string {
     try {
         const memeCreneau = reservationLockActif && dateHeureReservationEnCours === dateHeure;
         if (reservationLockActif && !memeCreneau && dateHeureReservationEnCours) {
-            await libererTablesRestaurant(nomRestaurant, dateHeureReservationEnCours);
+            await libererTablesRestaurant(proxyUrl, nomRestaurant, dateHeureReservationEnCours);
             reservationLockActif = false;
             tablesDisponiblesEnCours = [];
             dateHeureReservationEnCours = null;
         }
-        const tables = memeCreneau ? tablesDisponiblesEnCours : await recupererTablesRestaurant(nomRestaurant, dateHeure);
+        const tables = memeCreneau ? tablesDisponiblesEnCours : await recupererTablesRestaurant(proxyUrl, nomRestaurant, dateHeure);
 
         if (tables.length === 0) {
             tablesDiv.innerHTML = "Aucune table disponible sur ce créneau.";
@@ -527,7 +527,7 @@ function convertirDateHeure(value: string): string {
 
     const dateHeure = convertirDateHeure(dateInput.value);
 
-    const resultat = await reserverTableRestaurant({
+    const resultat = await reserverTableRestaurant(proxyUrl, {
         nomRestaurant: restaurantName.innerText,
         idTable,
         dateHeure,
@@ -591,7 +591,7 @@ function convertirDateHeure(value: string): string {
     reservationsList.innerHTML = "Chargement...";
 
     try {
-        const reservations = await recupererReservations();
+        const reservations = await recupererReservations(proxyUrl);
 
         if (reservations.length === 0) {
             reservationsList.innerHTML = "Aucune réservation.";

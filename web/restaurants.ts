@@ -37,16 +37,13 @@ export interface TableDisponible {
     nbPlaces: number;
 }
 
-export async function recupererTablesRestaurant(
-    nomRestaurant: string,
-    dateHeure: string
-): Promise<TableDisponible[]> {
+export async function recupererTablesRestaurant(proxyUrl: string, nomRestaurant: string, dateHeure: string): Promise<TableDisponible[]> {
     const params = new URLSearchParams();
 
     params.append("nomRestaurant", nomRestaurant);
     params.append("dateHeure", dateHeure);
 
-    const response = await fetch(`http://localhost:8081/api/restaurants/tables?${params.toString()}`);
+    const response = await fetch(`${proxyUrl}/api/restaurants/tables?${params.toString()}`);
     const json = await response.json();
 
     if (!json.success && !json.succes) {
@@ -65,13 +62,13 @@ export async function recupererTablesRestaurant(
  * @param {string} nomRestaurant Le nom du resto
  * @param {string} dateHeure Date et heure de reservation
  */
-export async function libererTablesRestaurant(nomRestaurant: string, dateHeure: string): Promise<void> {
+export async function libererTablesRestaurant(proxyUrl: string, nomRestaurant: string, dateHeure: string): Promise<void> {
     const params = new URLSearchParams();
 
     params.append("nomRestaurant", nomRestaurant);
     params.append("dateHeure", dateHeure);
 
-    const url = `http://localhost:8081/api/restaurants/tables/liberer?${params.toString()}`;
+    const url = `${proxyUrl}/api/restaurants/tables/liberer?${params.toString()}`;
     const response = await fetch(url, { method: "POST" });
     const json = await response.json();
 
@@ -80,7 +77,7 @@ export async function libererTablesRestaurant(nomRestaurant: string, dateHeure: 
     }
 }
 
-export async function reserverTableRestaurant(data: { nomRestaurant: string; idTable: number; dateHeure: string; nom: string; prenom: string; nombreConvives: number; telephone: string }) {
+export async function reserverTableRestaurant(proxyUrl: string, data: { nomRestaurant: string; idTable: number; dateHeure: string; nom: string; prenom: string; nombreConvives: number; telephone: string }) {
     const params = new URLSearchParams();
 
     params.append("nomRestaurant", data.nomRestaurant);
@@ -91,7 +88,7 @@ export async function reserverTableRestaurant(data: { nomRestaurant: string; idT
     params.append("nombreConvives", String(data.nombreConvives));
     params.append("telephone", data.telephone);
 
-    const response = await fetch(`http://localhost:8081/api/restaurants/reserver?${params.toString()}`, {
+    const response = await fetch(`${proxyUrl}/api/restaurants/reserver?${params.toString()}`, {
         method: "POST",
     });
 
@@ -113,8 +110,8 @@ export interface ReservationResponse {
     numTel: string;
 }
 
-export async function recupererReservations(): Promise<ReservationResponse[]> {
-    const response = await fetch("http://localhost:8081/api/restaurants/reservations");
+export async function recupererReservations(proxyUrl: string): Promise<ReservationResponse[]> {
+    const response = await fetch(`${proxyUrl}/api/restaurants/reservations`);
     const json = await response.json();
 
     if (!json.success) {
