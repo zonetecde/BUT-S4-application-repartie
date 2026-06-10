@@ -21,6 +21,35 @@ public class HttpClientUtils {
             .build();
 
     /**
+     * Effectue une requête HTTP GET et retourne le corps de la réponse,
+     * SANS passer par le proxy de l'IUT (pour les URLs locales).
+     *
+     * @param url URL à appeler
+     * @return corps de la réponse en String
+     * @throws IOException si une erreur HTTP ou réseau survient
+     * @throws InterruptedException si la requête est interrompue
+     */
+    public static String fetchUrlLocal(String url) throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        int statusCode = response.statusCode();
+        if (statusCode < 200 || statusCode >= 300) {
+            throw new IOException("Erreur HTTP " + statusCode + " pour l'URL : " + url);
+        }
+
+        return response.body();
+    }
+
+    /*
      * Effectue une requête HTTP GET et retourne le corps de la réponse.
      *
      * @param url URL à appeler

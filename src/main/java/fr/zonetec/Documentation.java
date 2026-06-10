@@ -75,7 +75,7 @@ public class Documentation implements ServiceDocumentation {
     }
 
     public String chargerDocumentationRestaurant() throws IOException, InterruptedException {
-        return HttpClientUtils.fetchUrl(proxyUrl + "/api/services/documentation/restaurant");
+        return HttpClientUtils.fetchUrlLocal(proxyUrl + "/api/services/documentation/restaurant");
     }
 
     /**
@@ -86,7 +86,7 @@ public class Documentation implements ServiceDocumentation {
      * @throws InterruptedException si l'appel HTTP est interrompu
      */
     public String chargerDocumentationCrous() throws IOException, InterruptedException {
-        return HttpClientUtils.fetchUrl(proxyUrl + "/api/services/documentation/crous");
+        return HttpClientUtils.fetchUrlLocal(proxyUrl + "/api/services/documentation/crous");
     }
 
     /**
@@ -97,7 +97,7 @@ public class Documentation implements ServiceDocumentation {
      * @throws InterruptedException si l'appel HTTP est interrompu
      */
     public String chargerDocumentationFetch() throws IOException, InterruptedException {
-        return HttpClientUtils.fetchUrl(proxyUrl + "/api/services/documentation/fetch");
+        return HttpClientUtils.fetchUrlLocal(proxyUrl + "/api/services/documentation/fetch");
     }
 
     /**
@@ -108,6 +108,6 @@ public class Documentation implements ServiceDocumentation {
      * @throws InterruptedException si l'appel HTTP est interrompu
      */
     public String chargerDocumentationPointGeo() throws IOException, InterruptedException {
-        return HttpClientUtils.fetchUrl(proxyUrl + "/api/services/documentation/pointgeo");
+        return HttpClientUtils.fetchUrlLocal(proxyUrl + "/api/services/documentation/pointgeo");
     }
 }
