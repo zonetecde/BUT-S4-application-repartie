@@ -373,32 +373,39 @@ function handleMapClick(event: any): void {
 (window as any).afficherTablesDisponibles = async function () {
     const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
     const tablesDiv = document.getElementById("tables-dispo");
+    const dateInput = document.getElementById("date-reservation-globale") as HTMLInputElement;
 
-    if (!restaurantName || !tablesDiv) return;
+    if (!restaurantName || !tablesDiv || !dateInput) return;
+
+    if (!dateInput.value) {
+        alert("Veuillez choisir une date et une heure.");
+        return;
+    }
 
     const nomRestaurant = restaurantName.innerText;
+    const dateHeure = dateInput.value.replace("T", " ") + ":00";
 
     tablesDiv.innerHTML = "Chargement des tables disponibles...";
     tablesDiv.classList.remove("hidden");
 
     try {
-        const tables = await recupererTablesRestaurant(nomRestaurant);
+        const tables = await recupererTablesRestaurant(nomRestaurant, dateHeure);
 
         if (tables.length === 0) {
-            tablesDiv.innerHTML = "Aucune table disponible.";
+            tablesDiv.innerHTML = "Aucune table disponible sur ce créneau.";
             return;
         }
 
         tablesDiv.innerHTML = tables
             .map(
                 (table) => `
-        <button
-            class="w-full text-left border-b border-blue-300 py-2 hover:bg-blue-200"
-            onclick="selectionnerTable(${table.idTable}, ${table.nbPlaces})"
-        >
-            <strong>Table ${table.idTable}</strong> — ${table.nbPlaces} places
-        </button>
-    `
+                <button
+                    class="w-full text-left border-b border-blue-300 py-2 hover:bg-blue-200"
+                    onclick="selectionnerTable(${table.idTable}, ${table.nbPlaces})"
+                >
+                    <strong>Table ${table.idTable}</strong> — ${table.nbPlaces} places
+                </button>
+            `
             )
             .join("");
     } catch (error: any) {
@@ -408,28 +415,28 @@ function handleMapClick(event: any): void {
 
 (window as any).validerReservation = async function (idTable: number) {
     const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
+    const dateInput = document.getElementById("date-reservation-globale") as HTMLInputElement;
 
     const nom = (document.getElementById("nom-reservation") as HTMLInputElement).value;
     const prenom = (document.getElementById("prenom-reservation") as HTMLInputElement).value;
     const telephone = (document.getElementById("tel-reservation") as HTMLInputElement).value;
-    const dateInput = (document.getElementById("date-reservation") as HTMLInputElement).value;
     const nombreConvives = Number((document.getElementById("convives-reservation") as HTMLInputElement).value);
 
-    if (!nom || !prenom || !telephone || !dateInput || !nombreConvives) {
+    if (!nom || !prenom || !telephone || !dateInput.value || !nombreConvives) {
         alert("Veuillez remplir tous les champs.");
         return;
     }
 
-    const dateHeure = dateInput.replace("T", " ") + ":00";
+    const dateHeure = dateInput.value.replace("T", " ") + ":00";
 
     const resultat = await reserverTableRestaurant({
         nomRestaurant: restaurantName.innerText,
-        idTable: idTable,
-        dateHeure: dateHeure,
-        nom: nom,
-        prenom: prenom,
-        nombreConvives: nombreConvives,
-        telephone: telephone,
+        idTable,
+        dateHeure,
+        nom,
+        prenom,
+        nombreConvives,
+        telephone,
     });
 
     alert(resultat.message);
@@ -450,7 +457,6 @@ function handleMapClick(event: any): void {
         <input class="border rounded px-2 py-1 mt-1 w-full" id="nom-reservation" placeholder="Nom" />
         <input class="border rounded px-2 py-1 mt-1 w-full" id="prenom-reservation" placeholder="Prénom" />
         <input class="border rounded px-2 py-1 mt-1 w-full" id="tel-reservation" placeholder="Téléphone" />
-        <input class="border rounded px-2 py-1 mt-1 w-full" id="date-reservation" type="datetime-local" />
         <input class="border rounded px-2 py-1 mt-1 w-full" id="convives-reservation" type="number" min="1" max="${nbPlaces}" placeholder="Nombre de convives" />
 
         <button

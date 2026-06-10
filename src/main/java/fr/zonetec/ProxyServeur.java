@@ -148,7 +148,22 @@ public class ProxyServeur {
             }
 
             // Appel la méthode du service RMI et envoie la réponse au client
-            Reponse response = serviceRestaurant.recupererTablesRestaurant(getQueryParams(exchange).get("nomRestaurant"));
+            Map<String, String> params = getQueryParams(exchange);
+
+            if (!params.containsKey("nomRestaurant")) {
+                sendJson(exchange, 400, new Reponse(false, "Paramètre nomRestaurant manquant", null).toJson());
+                return;
+            }
+
+            if (!params.containsKey("dateHeure")) {
+                sendJson(exchange, 400, new Reponse(false, "Paramètre dateHeure manquant", null).toJson());
+                return;
+            }
+
+            Reponse response = serviceRestaurant.recupererTablesRestaurant(
+                    params.get("nomRestaurant"),
+                    params.get("dateHeure")
+            );
             sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
         });
 

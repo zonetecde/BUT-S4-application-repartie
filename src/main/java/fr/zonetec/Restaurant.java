@@ -65,8 +65,7 @@ public class Restaurant implements ServiceRestaurant {
             int idRest = rs.getInt("idRestaurant");
             st = conn.prepareStatement(
                     "SELECT nbPlaces FROM Table_Resto " +
-                            "WHERE idRestaurant = ? AND idTable = ? AND reservee = 0 " +
-                            "FOR UPDATE NOWAIT"
+                            "WHERE idRestaurant = ? AND idTable = ?"
             );
             st.setInt(1, idRest);
             st.setInt(2, idTable);
@@ -121,21 +120,6 @@ public class Restaurant implements ServiceRestaurant {
                 conn.rollback();
                 return new Reponse(false, "Impossible d'ajouter la réservation", null);
             }
-            st = conn.prepareStatement(
-                    "UPDATE Table_Resto " +
-                            "SET reservee = 1 " +
-                            "WHERE idRestaurant = ? AND idTable = ?"
-            );
-
-            st.setInt(1, idRest);
-            st.setInt(2, idTable);
-
-            int updatedRows = st.executeUpdate();
-
-            if (updatedRows == 0) {
-                conn.rollback();
-                return new Reponse(false, "Impossible de mettre la table en réservation", null);
-            }
             conn.commit();
             return new Reponse(true, "La réservation a été ajoutée", true);
         } catch (SQLException e) {
@@ -159,48 +143,56 @@ public class Restaurant implements ServiceRestaurant {
      * @param nomRestaurant nom du restaurant
      * @return réponse JSON contenant un dictionnaire idTable => nombre de places
      */
-    public Reponse recupererTablesRestaurant (String nomRestaurant) throws RemoteException {
-        //on initalise la connexion
+    public Reponse recupererTablesRestaurant(String nomRestaurant, String dateHeure) throws RemoteException {
         try {
-            //on verifie l'existence du restaurant
-            PreparedStatement st = conn.prepareStatement("SELECT idRestaurant FROM Restaurant WHERE nom = ?");
+            Timestamp debutReservation = Timestamp.valueOf(dateHeure);
+            Timestamp finReservation = new Timestamp(debutReservation.getTime() + 3600000);
+
+            PreparedStatement st = conn.prepareStatement(
+                    "SELECT idRestaurant FROM Restaurant WHERE nom = ?"
+            );
             st.setString(1, nomRestaurant);
+
             ResultSet rs = st.executeQuery();
+
             if (!rs.next()) {
-                conn.rollback();
                 return new Reponse(false, "Le restaurant n'existe pas", null);
             }
-            //on verifier la disponibilité des tables
+
+            int idRest = rs.getInt("idRestaurant");
+
             st = conn.prepareStatement(
                     "SELECT t.idTable, t.nbPlaces " +
                             "FROM Table_Resto t " +
-                            "JOIN Restaurant r ON t.idRestaurant = r.idRestaurant " +
-                            "WHERE r.nom = ? AND t.reservee = 0"
+                            "WHERE t.idRestaurant = ? " +
+                            "AND NOT EXISTS ( " +
+                            "   SELECT 1 FROM Reservation res " +
+                            "   WHERE res.idRestaurant = t.idRestaurant " +
+                            "   AND res.idTable = t.idTable " +
+                            "   AND res.dateRes < ? " +
+                            "   AND res.dateRes + 1/24 > ? " +
+                            ")"
             );
-            st.setString(1, nomRestaurant);
+
+            st.setInt(1, idRest);
+            st.setTimestamp(2, finReservation);
+            st.setTimestamp(3, debutReservation);
+
             rs = st.executeQuery();
-            if (!rs.next()) {
-                conn.rollback();
-                return new Reponse(false, "Aucune table disponible", null);
-            }
-            HashMap<Integer, Integer> tables = new HashMap<>() ;
-            tables.put(rs.getInt(1),rs.getInt(2));
+
+            HashMap<Integer, Integer> tables = new HashMap<>();
+
             while (rs.next()) {
-                tables.put(rs.getInt(1),rs.getInt(2));
+                tables.put(rs.getInt("idTable"), rs.getInt("nbPlaces"));
             }
-            return new Reponse(true, "", tables);
-        }   catch (SQLException e) {
-            try {
-                conn.rollback();
-                // Si le code d'erreur est 54 c'est que la ligne est verrouillée par une autre transaction, donc qu'une autre personne est en train de réserver
-                if (e.getErrorCode() == 54) {
-                    return new Reponse(false, "Veuillez patienter, quelqu'un est déjà en train de réserver une table", null);
-                }
-                System.out.println(e);
-                return new Reponse(false, "Erreur lors de l'appel à la BD", null);
-            } catch (SQLException ex) {
-                return new Reponse(false, "Erreur lors du rollback", null);
-            }
+
+            return new Reponse(true, "Tables disponibles récupérées", tables);
+
+        } catch (IllegalArgumentException e) {
+            return new Reponse(false, "Date de réservation invalide", null);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return new Reponse(false, "Erreur lors de la récupération des tables : " + e.getMessage(), null);
         }
     }
 

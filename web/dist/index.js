@@ -63,9 +63,11 @@
     }));
     return restaurants2;
   }
-  async function recupererTablesRestaurant(nomRestaurant) {
-    const url2 = `http://localhost:8081/api/restaurants/tables?nomRestaurant=${encodeURIComponent(nomRestaurant)}`;
-    const response = await fetch(url2);
+  async function recupererTablesRestaurant(nomRestaurant, dateHeure) {
+    const params = new URLSearchParams();
+    params.append("nomRestaurant", nomRestaurant);
+    params.append("dateHeure", dateHeure);
+    const response = await fetch(`http://localhost:8081/api/restaurants/tables?${params.toString()}`);
     const json = await response.json();
     if (!json.success && !json.succes) {
       throw new Error(json.message);
@@ -412,25 +414,31 @@
   window.afficherTablesDisponibles = async function() {
     const restaurantName = document.getElementById("restaurant-name");
     const tablesDiv = document.getElementById("tables-dispo");
-    if (!restaurantName || !tablesDiv) return;
+    const dateInput = document.getElementById("date-reservation-globale");
+    if (!restaurantName || !tablesDiv || !dateInput) return;
+    if (!dateInput.value) {
+      alert("Veuillez choisir une date et une heure.");
+      return;
+    }
     const nomRestaurant = restaurantName.innerText;
+    const dateHeure = dateInput.value.replace("T", " ") + ":00";
     tablesDiv.innerHTML = "Chargement des tables disponibles...";
     tablesDiv.classList.remove("hidden");
     try {
-      const tables = await recupererTablesRestaurant(nomRestaurant);
+      const tables = await recupererTablesRestaurant(nomRestaurant, dateHeure);
       if (tables.length === 0) {
-        tablesDiv.innerHTML = "Aucune table disponible.";
+        tablesDiv.innerHTML = "Aucune table disponible sur ce cr\xE9neau.";
         return;
       }
       tablesDiv.innerHTML = tables.map(
         (table) => `
-        <button
-            class="w-full text-left border-b border-blue-300 py-2 hover:bg-blue-200"
-            onclick="selectionnerTable(${table.idTable}, ${table.nbPlaces})"
-        >
-            <strong>Table ${table.idTable}</strong> \u2014 ${table.nbPlaces} places
-        </button>
-    `
+                <button
+                    class="w-full text-left border-b border-blue-300 py-2 hover:bg-blue-200"
+                    onclick="selectionnerTable(${table.idTable}, ${table.nbPlaces})"
+                >
+                    <strong>Table ${table.idTable}</strong> \u2014 ${table.nbPlaces} places
+                </button>
+            `
       ).join("");
     } catch (error) {
       tablesDiv.innerHTML = error.message;
@@ -438,16 +446,16 @@
   };
   window.validerReservation = async function(idTable) {
     const restaurantName = document.getElementById("restaurant-name");
+    const dateInput = document.getElementById("date-reservation-globale");
     const nom = document.getElementById("nom-reservation").value;
     const prenom = document.getElementById("prenom-reservation").value;
     const telephone = document.getElementById("tel-reservation").value;
-    const dateInput = document.getElementById("date-reservation").value;
     const nombreConvives = Number(document.getElementById("convives-reservation").value);
-    if (!nom || !prenom || !telephone || !dateInput || !nombreConvives) {
+    if (!nom || !prenom || !telephone || !dateInput.value || !nombreConvives) {
       alert("Veuillez remplir tous les champs.");
       return;
     }
-    const dateHeure = dateInput.replace("T", " ") + ":00";
+    const dateHeure = dateInput.value.replace("T", " ") + ":00";
     const resultat = await reserverTableRestaurant({
       nomRestaurant: restaurantName.innerText,
       idTable,
@@ -471,7 +479,6 @@
         <input class="border rounded px-2 py-1 mt-1 w-full" id="nom-reservation" placeholder="Nom" />
         <input class="border rounded px-2 py-1 mt-1 w-full" id="prenom-reservation" placeholder="Pr\xE9nom" />
         <input class="border rounded px-2 py-1 mt-1 w-full" id="tel-reservation" placeholder="T\xE9l\xE9phone" />
-        <input class="border rounded px-2 py-1 mt-1 w-full" id="date-reservation" type="datetime-local" />
         <input class="border rounded px-2 py-1 mt-1 w-full" id="convives-reservation" type="number" min="1" max="${nbPlaces}" placeholder="Nombre de convives" />
 
         <button
