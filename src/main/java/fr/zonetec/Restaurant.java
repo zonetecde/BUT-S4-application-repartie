@@ -142,7 +142,7 @@ public class Restaurant implements ServiceRestaurant {
                 return new Reponse(false, "Impossible de mettre la table en réservation", null);
             }
             conn.commit();
-            RESTAURANTS_EN_RESERVATION.remove(nomRestaurant);
+            RESTAURANTS_EN_RESERVATION.remove(nomRestaurant + "|" + dateHeure);
             return new Reponse(true, "La réservation a été ajoutée", true);
         } catch (SQLException e) {
         try {
@@ -163,12 +163,19 @@ public class Restaurant implements ServiceRestaurant {
      * Récupère les tables disponibles d'un restaurant et verrouille les lignes sélectionnées jusqu'à la réservation.
      *
      * @param nomRestaurant nom du restaurant
+     * @param dateHeure date et heure de la réservation au format yyyy-mm-dd hh:mm:ss
      * @return réponse JSON contenant un dictionnaire idTable => nombre de places
      */
-    public Reponse recupererTablesRestaurant (String nomRestaurant) throws RemoteException {
+    public Reponse recupererTablesRestaurant (String nomRestaurant, String dateHeure) throws RemoteException {
         boolean verrouPris = false;
+        // lock seulement le resto pr la meme date/heure
+        String reservationKey = nomRestaurant + "|" + dateHeure;
         //on initalise la connexion
         try {
+            Timestamp debutReservation = Timestamp.valueOf(dateHeure);
+            // on dit qu'une resa dure une heure
+            Timestamp finReservation = new Timestamp(debutReservation.getTime() + 3600000);
+
             //on verifie l'existence du restaurant
             PreparedStatement st = conn.prepareStatement("SELECT idRestaurant FROM Restaurant WHERE nom = ?");
             st.setString(1, nomRestaurant);
@@ -177,24 +184,33 @@ public class Restaurant implements ServiceRestaurant {
                 conn.rollback();
                 return new Reponse(false, "Le restaurant n'existe pas", null);
             }
+            int idRest = rs.getInt("idRestaurant");
             //on verifier la disponibilité des tables et que personne d'autre n'est en train de réserver dans ce restaurant
-            if (!RESTAURANTS_EN_RESERVATION.add(nomRestaurant)) {
+            if (!RESTAURANTS_EN_RESERVATION.add(reservationKey)) {
                 conn.rollback();
-                return new Reponse(false, "Veuillez patienter, une autre personne est déjà en train de réserver dans ce restaurant", null);
+                return new Reponse(false, "Veuillez patienter, une autre personne est déjà en train de réserver dans ce restaurant pour ce créneau", null);
             }
             verrouPris = true;
             st = conn.prepareStatement(
                     "SELECT t.idTable, t.nbPlaces " +
                             "FROM Table_Resto t " +
-                            "JOIN Restaurant r ON t.idRestaurant = r.idRestaurant " +
-                            "WHERE r.nom = ? AND t.reservee = 0 " +
+                            "WHERE t.idRestaurant = ? " +
+                            "AND NOT EXISTS ( " +
+                            "   SELECT 1 FROM Reservation res " +
+                            "   WHERE res.idRestaurant = t.idRestaurant " +
+                            "   AND res.idTable = t.idTable " +
+                            "   AND res.dateRes < ? " +
+                            "   AND res.dateRes + 1/24 > ? " +
+                            ") " +
                             "FOR UPDATE NOWAIT"
             );
-            st.setString(1, nomRestaurant);
+            st.setInt(1, idRest);
+            st.setTimestamp(2, finReservation);
+            st.setTimestamp(3, debutReservation);
             rs = st.executeQuery();
             if (!rs.next()) {
                 conn.rollback();
-                RESTAURANTS_EN_RESERVATION.remove(nomRestaurant);
+                RESTAURANTS_EN_RESERVATION.remove(reservationKey);
                 return new Reponse(false, "Aucune table disponible", null);
             }
             HashMap<Integer, Integer> tables = new HashMap<>() ;
@@ -207,17 +223,19 @@ public class Restaurant implements ServiceRestaurant {
             try {
                 conn.rollback();
                 if (verrouPris) {
-                    RESTAURANTS_EN_RESERVATION.remove(nomRestaurant);
+                    RESTAURANTS_EN_RESERVATION.remove(reservationKey);
                 }
                 // Si le code d'erreur est 54 c'est que la ligne est verrouillée par une autre transaction, donc qu'une autre personne est en train de réserver
                 if (e.getErrorCode() == 54) {
-                    return new Reponse(false, "Veuillez patienter, quelqu'un est déjà en train de réserver une table", null);
+                    return new Reponse(false, "Veuillez patienter, quelqu'un est déjà en train de réserver une table sur ce créneau", null);
                 }
                 System.out.println(e);
                 return new Reponse(false, "Erreur lors de l'appel à la BD", null);
             } catch (SQLException ex) {
                 return new Reponse(false, "Erreur lors du rollback", null);
             }
+        } catch (IllegalArgumentException e) {
+            return new Reponse(false, "Date de réservation invalide", null);
         }
     }
 
@@ -225,11 +243,12 @@ public class Restaurant implements ServiceRestaurant {
      * Libère le verrou de reservation d'un restaurant.
      *
      * @param nomRestaurant nom du restaurant
+     * @param dateHeure date et heure de la réservation
      * @return réponse JSON confirmant la liberation
      */
-    public Reponse libererTablesRestaurant(String nomRestaurant) throws RemoteException {
-        if (nomRestaurant != null) {
-            RESTAURANTS_EN_RESERVATION.remove(nomRestaurant);
+    public Reponse libererTablesRestaurant(String nomRestaurant, String dateHeure) throws RemoteException {
+        if (nomRestaurant != null && dateHeure != null) {
+            RESTAURANTS_EN_RESERVATION.remove(nomRestaurant + "|" + dateHeure);
         }
         try {
             // le rollback va libérer les verrous pris lors de la récupération des tables, même si aucune table n'a été réservée à la fin

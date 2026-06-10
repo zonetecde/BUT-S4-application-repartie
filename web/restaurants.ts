@@ -37,10 +37,16 @@ export interface TableDisponible {
     nbPlaces: number;
 }
 
-export async function recupererTablesRestaurant(nomRestaurant: string): Promise<TableDisponible[]> {
-    const url = `http://localhost:8081/api/restaurants/tables?nomRestaurant=${encodeURIComponent(nomRestaurant)}`;
+export async function recupererTablesRestaurant(
+    nomRestaurant: string,
+    dateHeure: string
+): Promise<TableDisponible[]> {
+    const params = new URLSearchParams();
 
-    const response = await fetch(url);
+    params.append("nomRestaurant", nomRestaurant);
+    params.append("dateHeure", dateHeure);
+
+    const response = await fetch(`http://localhost:8081/api/restaurants/tables?${params.toString()}`);
     const json = await response.json();
 
     if (!json.success && !json.succes) {
@@ -57,9 +63,15 @@ export async function recupererTablesRestaurant(nomRestaurant: string): Promise<
  * Enlève le verrou de réservation pour un restaurant
  *
  * @param {string} nomRestaurant Le nom du resto
+ * @param {string} dateHeure Date et heure de reservation
  */
-export async function libererTablesRestaurant(nomRestaurant: string): Promise<void> {
-    const url = `http://localhost:8081/api/restaurants/tables/liberer?nomRestaurant=${encodeURIComponent(nomRestaurant)}`;
+export async function libererTablesRestaurant(nomRestaurant: string, dateHeure: string): Promise<void> {
+    const params = new URLSearchParams();
+
+    params.append("nomRestaurant", nomRestaurant);
+    params.append("dateHeure", dateHeure);
+
+    const url = `http://localhost:8081/api/restaurants/tables/liberer?${params.toString()}`;
     const response = await fetch(url, { method: "POST" });
     const json = await response.json();
 

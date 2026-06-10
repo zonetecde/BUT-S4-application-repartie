@@ -63,9 +63,11 @@
     }));
     return restaurants2;
   }
-  async function recupererTablesRestaurant(nomRestaurant) {
-    const url2 = `http://localhost:8081/api/restaurants/tables?nomRestaurant=${encodeURIComponent(nomRestaurant)}`;
-    const response = await fetch(url2);
+  async function recupererTablesRestaurant(nomRestaurant, dateHeure) {
+    const params = new URLSearchParams();
+    params.append("nomRestaurant", nomRestaurant);
+    params.append("dateHeure", dateHeure);
+    const response = await fetch(`http://localhost:8081/api/restaurants/tables?${params.toString()}`);
     const json = await response.json();
     if (!json.success && !json.succes) {
       throw new Error(json.message);
@@ -75,8 +77,11 @@
       nbPlaces: Number(nbPlaces)
     }));
   }
-  async function libererTablesRestaurant(nomRestaurant) {
-    const url2 = `http://localhost:8081/api/restaurants/tables/liberer?nomRestaurant=${encodeURIComponent(nomRestaurant)}`;
+  async function libererTablesRestaurant(nomRestaurant, dateHeure) {
+    const params = new URLSearchParams();
+    params.append("nomRestaurant", nomRestaurant);
+    params.append("dateHeure", dateHeure);
+    const url2 = `http://localhost:8081/api/restaurants/tables/liberer?${params.toString()}`;
     const response = await fetch(url2, { method: "POST" });
     const json = await response.json();
     if (!json.success && !json.succes) {
@@ -186,6 +191,7 @@
   var positionActuelMarker = null;
   var reservationLockActif = false;
   var tablesDisponiblesEnCours = [];
+  var dateHeureReservationEnCours = null;
   fetch(url).then((response) => response.json()).then(async (data) => {
     const lon = data.features[0].geometry.coordinates[0];
     const lat = data.features[0].geometry.coordinates[1];
@@ -361,15 +367,16 @@
   window.updateMap = updateMap;
   window.cacherActions = async function() {
     const restaurantName = document.getElementById("restaurant-name");
-    if (reservationLockActif && restaurantName?.innerText) {
+    if (reservationLockActif && restaurantName?.innerText && dateHeureReservationEnCours) {
       try {
-        await libererTablesRestaurant(restaurantName.innerText);
+        await libererTablesRestaurant(restaurantName.innerText, dateHeureReservationEnCours);
       } catch (error) {
         console.log("Erreur lors de la liberation du verrou :", error);
       }
     }
     reservationLockActif = false;
     tablesDisponiblesEnCours = [];
+    dateHeureReservationEnCours = null;
     afficherPanneau("filtres");
   };
   window.cacherMenuCrous = function() {
@@ -377,8 +384,8 @@
   };
   window.addEventListener("beforeunload", () => {
     const restaurantName = document.getElementById("restaurant-name");
-    if (reservationLockActif && restaurantName?.innerText) {
-      navigator.sendBeacon(`${proxyUrl}/api/restaurants/tables/liberer?nomRestaurant=${encodeURIComponent(restaurantName.innerText)}`);
+    if (reservationLockActif && restaurantName?.innerText && dateHeureReservationEnCours) {
+      navigator.sendBeacon(`${proxyUrl}/api/restaurants/tables/liberer?nomRestaurant=${encodeURIComponent(restaurantName.innerText)}&dateHeure=${encodeURIComponent(dateHeureReservationEnCours)}`);
     }
   });
   function handleMapClick(event) {
@@ -442,31 +449,46 @@
   window.afficherTablesDisponibles = async function(utiliserTablesChargees = false) {
     const restaurantName = document.getElementById("restaurant-name");
     const tablesDiv = document.getElementById("tables-dispo");
-    if (!restaurantName || !tablesDiv) return;
+    const dateInput = document.getElementById("date-reservation-globale");
+    if (!restaurantName || !tablesDiv || !dateInput) return;
+    if (!dateInput.value) {
+      alert("Veuillez choisir une date et une heure.");
+      return;
+    }
     const nomRestaurant = restaurantName.innerText;
+    const dateHeure = dateInput.value.replace("T", " ") + ":00";
     tablesDiv.innerHTML = "Chargement des tables disponibles...";
     tablesDiv.classList.remove("hidden");
     try {
-      const tables = utiliserTablesChargees || reservationLockActif ? tablesDisponiblesEnCours : await recupererTablesRestaurant(nomRestaurant);
+      const memeCreneau = reservationLockActif && dateHeureReservationEnCours === dateHeure;
+      if (reservationLockActif && !memeCreneau && dateHeureReservationEnCours) {
+        await libererTablesRestaurant(nomRestaurant, dateHeureReservationEnCours);
+        reservationLockActif = false;
+        tablesDisponiblesEnCours = [];
+        dateHeureReservationEnCours = null;
+      }
+      const tables = memeCreneau ? tablesDisponiblesEnCours : await recupererTablesRestaurant(nomRestaurant, dateHeure);
       if (tables.length === 0) {
-        tablesDiv.innerHTML = "Aucune table disponible.";
+        tablesDiv.innerHTML = "Aucune table disponible sur ce cr\xE9neau.";
         return;
       }
       reservationLockActif = true;
       tablesDisponiblesEnCours = tables;
+      dateHeureReservationEnCours = dateHeure;
       tablesDiv.innerHTML = tables.map(
         (table) => `
-        <button
-            class="w-full text-left border-b border-blue-300 py-2 hover:bg-blue-200"
-            onclick="selectionnerTable(${table.idTable}, ${table.nbPlaces})"
-        >
-            <strong>Table ${table.idTable}</strong> \u2014 ${table.nbPlaces} places
-        </button>
-    `
+                <button
+                    class="w-full text-left border-b border-blue-300 py-2 hover:bg-blue-200"
+                    onclick="selectionnerTable(${table.idTable}, ${table.nbPlaces})"
+                >
+                    <strong>Table ${table.idTable}</strong> \u2014 ${table.nbPlaces} places
+                </button>
+            `
       ).join("");
     } catch (error) {
       reservationLockActif = false;
       tablesDisponiblesEnCours = [];
+      dateHeureReservationEnCours = null;
       tablesDiv.innerHTML = `
             <p>${error.message}</p>
             <button class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 mt-2 cursor-pointer" onclick="afficherTablesDisponibles()">Actualiser</button>
@@ -475,16 +497,16 @@
   };
   window.validerReservation = async function(idTable) {
     const restaurantName = document.getElementById("restaurant-name");
+    const dateInput = document.getElementById("date-reservation-globale");
     const nom = document.getElementById("nom-reservation").value;
     const prenom = document.getElementById("prenom-reservation").value;
     const telephone = document.getElementById("tel-reservation").value;
-    const dateInput = document.getElementById("date-reservation").value;
     const nombreConvives = Number(document.getElementById("convives-reservation").value);
-    if (!nom || !prenom || !telephone || !dateInput || !nombreConvives) {
+    if (!nom || !prenom || !telephone || !dateInput.value || !nombreConvives) {
       alert("Veuillez remplir tous les champs.");
       return;
     }
-    const dateHeure = dateInput.replace("T", " ") + ":00";
+    const dateHeure = dateInput.value.replace("T", " ") + ":00";
     const resultat = await reserverTableRestaurant({
       nomRestaurant: restaurantName.innerText,
       idTable,
@@ -498,6 +520,7 @@
     if (resultat.succes || resultat.success) {
       reservationLockActif = false;
       tablesDisponiblesEnCours = [];
+      dateHeureReservationEnCours = null;
       window.cacherActions();
     }
   };
@@ -510,7 +533,6 @@
         <input class="border rounded px-2 py-1 mt-1 w-full" id="nom-reservation" placeholder="Nom" />
         <input class="border rounded px-2 py-1 mt-1 w-full" id="prenom-reservation" placeholder="Pr\xE9nom" />
         <input class="border rounded px-2 py-1 mt-1 w-full" id="tel-reservation" placeholder="T\xE9l\xE9phone" />
-        <input class="border rounded px-2 py-1 mt-1 w-full" id="date-reservation" type="datetime-local" />
         <input class="border rounded px-2 py-1 mt-1 w-full" id="convives-reservation" type="number" min="1" max="${nbPlaces}" placeholder="Nombre de convives" />
 
         <button
