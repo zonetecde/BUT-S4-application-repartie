@@ -70,7 +70,7 @@ public class Restaurant implements ServiceRestaurant {
             int idRest = rs.getInt("idRestaurant");
             st = conn.prepareStatement(
                     "SELECT nbPlaces FROM Table_Resto " +
-                            "WHERE idRestaurant = ? AND idTable = ? AND reservee = 0 " +
+                            "WHERE idRestaurant = ? AND idTable = ? " +
                             "FOR UPDATE NOWAIT"
             );
             st.setInt(1, idRest);
@@ -125,21 +125,6 @@ public class Restaurant implements ServiceRestaurant {
             if (rowsAffected == 0) {
                 conn.rollback();
                 return new Reponse(false, "Impossible d'ajouter la réservation", null);
-            }
-            st = conn.prepareStatement(
-                    "UPDATE Table_Resto " +
-                            "SET reservee = 1 " +
-                            "WHERE idRestaurant = ? AND idTable = ?"
-            );
-
-            st.setInt(1, idRest);
-            st.setInt(2, idTable);
-
-            int updatedRows = st.executeUpdate();
-
-            if (updatedRows == 0) {
-                conn.rollback();
-                return new Reponse(false, "Impossible de mettre la table en réservation", null);
             }
             conn.commit();
             RESTAURANTS_EN_RESERVATION.remove(nomRestaurant + "|" + dateHeure);
