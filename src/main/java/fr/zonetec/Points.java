@@ -8,6 +8,34 @@ import java.util.ArrayList;
  * Implémentation du service RMI pour la gestion des points géographiques
  */
 public class Points implements ServicePoint {
+    /**
+     * Charge la documentation HTML du service PointGeo.
+     *
+     * @return documentation HTML du service
+     */
+    public String chargerDocumentation() {
+        return """
+                <section>
+                    <h2>Service PointGeo</h2>
+                    <p>
+                        Le service PointGeo sert à gérer les points ajoutés par les utilisateurs sur la carte. Un point
+                        contient des coordonnées, un emoji, un titre et une description. Ces informations sont stockées
+                        dans la base de données pour pouvoir les retrouver plus tard.
+                    </p>
+                    <p>
+                        Quand le site charge la carte, le proxy appelle le service PointGeo pour récupérer tous les points.
+                        Le service lit la table Point_Geo, transforme chaque ligne en objet Point, puis renvoie la liste
+                        au navigateur.
+                    </p>
+                    <p>
+                        Quand un utilisateur ajoute un point, le site envoie les coordonnées et le texte au proxy. Le proxy
+                        appelle ensuite le service PointGeo. Le service insère le point en base, récupère l'identifiant créé,
+                        puis renvoie le nouveau point pour que la carte puisse l'afficher directement.
+                    </p>
+                    <img src="static/schema-service-pointgeo.png" alt="Schéma du service PointGeo" />
+                </section>
+                """;
+    }
 
     /**
      * Récupère tous les points géographiques de la base de données

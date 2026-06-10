@@ -1,8 +1,7 @@
 package fr.zonetec;
 
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-public interface ServiceFetch extends Remote {
+public interface ServiceFetch extends ServiceDocumentation {
     Reponse fetch(String url) throws RemoteException;
 }

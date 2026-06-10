@@ -14,6 +14,41 @@ public class Restaurant implements ServiceRestaurant {
     private static Set<String> RESTAURANTS_EN_RESERVATION = ConcurrentHashMap.newKeySet();
 
     Connection conn ;
+
+    /**
+     * Charge la documentation HTML du service Restaurant.
+     *
+     * @return documentation HTML du service
+     */
+    public String chargerDocumentation() {
+        return """
+                <section>
+                    <h2>Service Restaurant</h2>
+                    <p>
+                        Le service Restaurant gère les restaurants, les tables disponibles et les réservations. Le site
+                        commence par demander la liste des restaurants avec leurs coordonnées pour les afficher sur la carte.
+                    </p>
+                    <p>
+                        Quand l'utilisateur veut réserver, il choisit d'abord une date et une heure. Le service cherche alors
+                        les tables du restaurant qui ne sont pas déjà prises sur ce créneau. Une réservation dure une heure,
+                        donc une table réservée à midi est considérée occupée jusqu'à 13h.
+                    </p>
+                    <p>
+                        Pour éviter que deux personnes réservent en même temps le même restaurant au même horaire, le service
+                        prend un verrou sur le couple restaurant + date/heure. Il verrouille aussi les lignes SQL des tables
+                        disponibles avec FOR UPDATE NOWAIT. Si une autre personne est déjà en train de réserver ce même créneau,
+                        le service renvoie un message demandant de patienter.
+                    </p>
+                    <p>
+                        Quand l'utilisateur valide la réservation, le service vérifie une dernière fois que la table existe,
+                        que le nombre de convives est correct, et qu'aucune réservation ne chevauche ce créneau. Ensuite il
+                        insère la réservation en base et libère le verrou.
+                    </p>
+                    <img src="static/schema-service-restaurant.png" alt="Schéma du service Restaurant" />
+                    <img src="schema-service-restaurant-2.png" alt="Schéma du service Restaurant" />
+                </section>
+                """;
+    }
     /**
      * Récupère les coordonnées de tous les restaurants de Nancy enregistrés en base.
      *

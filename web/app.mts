@@ -80,7 +80,7 @@ fetch(url)
  */
 function afficherPanneau(panelId: string): void {
     // Cache tous les panneaux
-    const panels = ["filtres", "reservation-form", "menu-crous", "add-point-form"];
+    const panels = ["filtres", "reservation-form", "menu-crous", "add-point-form", "documentation-panel"];
     for (const id of panels) {
         const el = document.getElementById(id);
         if (el) el.style.display = "none";
@@ -298,6 +298,50 @@ function updateMap() {
 
 (window as any).cacherMenuCrous = function () {
     afficherPanneau("filtres");
+};
+
+/**
+ * Affiche le panneau de documentation.
+ */
+(window as any).afficherDocumentationPanel = function (): void {
+    afficherPanneau("documentation-panel");
+
+    const content = document.getElementById("documentation-content");
+    if (content) {
+        content.innerHTML = "Choisissez un service.";
+    }
+};
+
+/**
+ * Cache le panneau de documentation.
+ */
+(window as any).cacherDocumentationPanel = function (): void {
+    afficherPanneau("filtres");
+};
+
+/**
+ * Charge la documentation HTML d'un service via le proxy.
+ * @param service Nom du service a demander au proxy.
+ * @returns Une promesse terminee quand la documentation est affichee.
+ */
+(window as any).chargerDocumentationService = async function (service: string): Promise<void> {
+    const content = document.getElementById("documentation-content");
+
+    if (!content) return;
+
+    content.innerHTML = "Chargement...";
+
+    try {
+        const response = await fetch(`${proxyUrl}/api/documentation/${service}`);
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        content.innerHTML = await response.text();
+    } catch (error: any) {
+        content.innerText = error.message;
+    }
 };
 
 // avant de quitter la page on libère le verrou pour pas que on reste bloqué à l'infini

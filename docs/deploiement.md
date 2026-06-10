@@ -63,9 +63,33 @@ java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerPointGeo
 
 ---
 
+## Machine F - Service Documentation
+
+Le service Documentation à besoin de connaitre l'URL du proxy HTTP, car sa méthode RMI appelle le proxy pour demander la documentation du service voulu.
+
+Il doit etre lancé **avant** le proxy HTTP, comme les autres services RMI.
+
+```bash
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.LancerDocumentation http://<IP_PROXY>:8081
+```
+
+L'argument est :
+
+| #   | Parametre      | Defaut                  | Description                      |
+| --- | -------------- | ----------------------- | -------------------------------- |
+| 1   | URL proxy HTTP | `http://localhost:8081` | Adresse du proxy de la machine E |
+
+Le service s'enregistre dans l'annuaire RMI avec le nom :
+
+```text
+documentation
+```
+
+---
+
 ## Machine E - Proxy HTTP
 
-Le proxy HTTP doit être lancé **après** les quatre services RMI.
+Le proxy HTTP doit être lancé **après** les cinq services RMI.
 
 ```bash
 java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur \
@@ -73,27 +97,30 @@ java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur \
     <IP_RESTAURANT> 1099 \
     <IP_CROUS> 1099 \
     <IP_FETCH> 1099 \
-    <IP_POINTGEO> 1099
+    <IP_POINTGEO> 1099 \
+    <IP_DOCUMENTATION> 1099
 ```
 
-Les 9 arguments sont :
+Les 11 arguments sont :
 
-| #   | Paramètre       | Défaut      | Description                     |
-| --- | --------------- | ----------- | ------------------------------- |
-| 1   | Port HTTP       | `8081`      | Port d'exposition de l'API REST |
-| 2   | Hôte Restaurant | `localhost` | IP de la machine A              |
-| 3   | Port Restaurant | `1099`      | Port RMI de la machine A        |
-| 4   | Hôte Crous      | `localhost` | IP de la machine C              |
-| 5   | Port Crous      | `1099`      | Port RMI de la machine C        |
-| 6   | Hôte Fetch      | `localhost` | IP de la machine B              |
-| 7   | Port Fetch      | `1099`      | Port RMI de la machine B        |
-| 8   | Hôte PointGeo   | `localhost` | IP de la machine D              |
-| 9   | Port PointGeo   | `1099`      | Port RMI de la machine D        |
+| #   | Paramètre          | Défaut      | Description                     |
+| --- | ------------------ | ----------- | ------------------------------- |
+| 1   | Port HTTP          | `8081`      | Port d'exposition de l'API REST |
+| 2   | Hôte Restaurant    | `localhost` | IP de la machine A              |
+| 3   | Port Restaurant    | `1099`      | Port RMI de la machine A        |
+| 4   | Hôte Crous         | `localhost` | IP de la machine C              |
+| 5   | Port Crous         | `1099`      | Port RMI de la machine C        |
+| 6   | Hôte Fetch         | `localhost` | IP de la machine B              |
+| 7   | Port Fetch         | `1099`      | Port RMI de la machine B        |
+| 8   | Hôte PointGeo      | `localhost` | IP de la machine D              |
+| 9   | Port PointGeo      | `1099`      | Port RMI de la machine D        |
+| 10  | Hote Documentation | `localhost` | IP de la machine F              |
+| 11  | Port Documentation | `1099`      | Port RMI de la machine F        |
 
 ### Avec tout sur la même machine :
 
 ```bash
-java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur 8081 localhost 1099 localhost 1099 localhost 1099 localhost 1099
+java -cp "target/restaurant-rmi-server.jar" fr.zonetec.ProxyServeur 8081 localhost 1099 localhost 1099 localhost 1099 localhost 1099 localhost 1099
 ```
 
 ---

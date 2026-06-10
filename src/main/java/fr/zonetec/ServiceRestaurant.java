@@ -1,9 +1,8 @@
 package fr.zonetec;
 
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-public interface ServiceRestaurant extends Remote {
+public interface ServiceRestaurant extends ServiceDocumentation {
     Reponse recupererCoordonneesRestaurantsNancy() throws RemoteException;
 
     Reponse reserverTable(

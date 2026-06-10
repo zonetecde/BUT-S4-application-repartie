@@ -12,6 +12,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 /**
  * Classe permettant de lancer le Proxy HTTP qui va exposer une API pour récupérer les différentes données du service RMI.
@@ -48,6 +49,8 @@ public class ProxyServeur {
         // IP et Port où est exposé le service RMI PointGeo
         String pointGeoHost = args.length > 7 ? args[7] : "localhost";
         int pointGeoPort = args.length > 8 ? Integer.parseInt(args[8]) : 1099;
+        String documentationHost = args.length > 9 ? args[9] : "localhost";
+        int documentationPort = args.length > 10 ? Integer.parseInt(args[10]) : 1099;
 
         // Récupère l'annuaire RMI et le service Restaurant
         Registry regRestaurant = LocateRegistry.getRegistry(restaurantHost, restaurantPort);
@@ -65,8 +68,12 @@ public class ProxyServeur {
         Registry regPointGeo = LocateRegistry.getRegistry(pointGeoHost, pointGeoPort);
         ServicePoint servicePointGeo = (ServicePoint) regPointGeo.lookup("pointgeo");
 
+        Registry regDocumentation = LocateRegistry.getRegistry(documentationHost, documentationPort);
+        ServiceDocumentation serviceDocumentation = (ServiceDocumentation) regDocumentation.lookup("documentation");
+
         // Créer et configure le serveur HTTP
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+        server.setExecutor(Executors.newCachedThreadPool());
 
         // Crée l'endpoint pour récupérer les coordonnées des restaurants
         server.createContext("/api/restaurants/coordonnees", exchange -> {
@@ -312,6 +319,123 @@ public class ProxyServeur {
             }
         });
 
+        server.createContext("/api/services/documentation/restaurant", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "MÃ©thode non autorisÃ©e", null).toJson());
+                return;
+            }
+
+            sendHtml(exchange, 200, serviceRestaurant.chargerDocumentation());
+        });
+
+        server.createContext("/api/services/documentation/crous", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "MÃ©thode non autorisÃ©e", null).toJson());
+                return;
+            }
+
+            sendHtml(exchange, 200, serviceCrous.chargerDocumentation());
+        });
+
+        server.createContext("/api/services/documentation/fetch", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "MÃ©thode non autorisÃ©e", null).toJson());
+                return;
+            }
+
+            sendHtml(exchange, 200, serviceFetch.chargerDocumentation());
+        });
+
+        server.createContext("/api/services/documentation/pointgeo", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "MÃ©thode non autorisÃ©e", null).toJson());
+                return;
+            }
+
+            sendHtml(exchange, 200, servicePointGeo.chargerDocumentation());
+        });
+
+        server.createContext("/api/documentation/restaurant", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            sendDocumentationResponse(exchange, serviceDocumentation.chargerDocumentation("restaurant"));
+        });
+
+        server.createContext("/api/documentation/crous", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            sendDocumentationResponse(exchange, serviceDocumentation.chargerDocumentation("crous"));
+        });
+
+        server.createContext("/api/documentation/fetch", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            sendDocumentationResponse(exchange, serviceDocumentation.chargerDocumentation("fetch"));
+        });
+
+        server.createContext("/api/documentation/pointgeo", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            sendDocumentationResponse(exchange, serviceDocumentation.chargerDocumentation("pointgeo"));
+        });
+
+        server.createContext("/api/documentation/documentation", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            sendDocumentationResponse(exchange, serviceDocumentation.chargerDocumentation("documentation"));
+        });
+
         server.start();
 
         System.out.println("Proxy HTTP lancé sur http://localhost:" + port);
@@ -347,6 +471,43 @@ public class ProxyServeur {
         byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
 
         exchange.getResponseHeaders().add("Content-Type", "application/json; charset=utf-8");
+        addCorsHeaders(exchange);
+
+        exchange.sendResponseHeaders(statusCode, bytes.length);
+
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
+        }
+    }
+
+    /**
+     * Envoie une réponse HTML HTTP.
+     *
+     * @param exchange échange HTTP courant
+     * @param statusCode code de statut HTTP
+     * @param html contenu HTML à renvoyer
+     * @throws IOException si l'écriture de la réponse échoue
+     */
+    /**
+     * Envoie la documentation retournee par le service RMI Documentation.
+     *
+     * @param exchange echange HTTP courant
+     * @param response reponse du service Documentation
+     * @throws IOException si l'ecriture de la reponse echoue
+     */
+    private static void sendDocumentationResponse(HttpExchange exchange, Reponse response) throws IOException {
+        if (!response.isSuccess()) {
+            sendJson(exchange, 400, response.toJson());
+            return;
+        }
+
+        sendHtml(exchange, 200, String.valueOf(response.getData()));
+    }
+
+    private static void sendHtml(HttpExchange exchange, int statusCode, String html) throws IOException {
+        byte[] bytes = html.getBytes(StandardCharsets.UTF_8);
+
+        exchange.getResponseHeaders().add("Content-Type", "text/html; charset=utf-8");
         addCorsHeaders(exchange);
 
         exchange.sendResponseHeaders(statusCode, bytes.length);

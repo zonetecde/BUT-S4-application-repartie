@@ -214,7 +214,7 @@
     localiserUtilisateur();
   });
   function afficherPanneau(panelId) {
-    const panels = ["filtres", "reservation-form", "menu-crous", "add-point-form"];
+    const panels = ["filtres", "reservation-form", "menu-crous", "add-point-form", "documentation-panel"];
     for (const id of panels) {
       const el = document.getElementById(id);
       if (el) el.style.display = "none";
@@ -381,6 +381,30 @@
   };
   window.cacherMenuCrous = function() {
     afficherPanneau("filtres");
+  };
+  window.afficherDocumentationPanel = function() {
+    afficherPanneau("documentation-panel");
+    const content = document.getElementById("documentation-content");
+    if (content) {
+      content.innerHTML = "Choisissez un service.";
+    }
+  };
+  window.cacherDocumentationPanel = function() {
+    afficherPanneau("filtres");
+  };
+  window.chargerDocumentationService = async function(service) {
+    const content = document.getElementById("documentation-content");
+    if (!content) return;
+    content.innerHTML = "Chargement...";
+    try {
+      const response = await fetch(`${proxyUrl}/api/documentation/${service}`);
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      content.innerHTML = await response.text();
+    } catch (error) {
+      content.innerText = error.message;
+    }
   };
   window.addEventListener("beforeunload", () => {
     const restaurantName = document.getElementById("restaurant-name");
