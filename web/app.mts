@@ -1,6 +1,6 @@
 import { recupererVelibsNancy, StationVelib } from "./velibs.js";
 import { Incident, recupererIncidentsNancy } from "./incidents.js";
-import { recupererRestoNancy, RestaurantResponse, recupererTablesRestaurant, reserverTableRestaurant, recupererReservations } from "./restaurants.js";
+import { recupererRestoNancy, RestaurantResponse, recupererTablesRestaurant, reserverTableRestaurant, recupererReservations, libererTablesRestaurant, TableDisponible } from "./restaurants.js";
 import { recupererCrousNancy, chargerMenu, Restaurant as RestaurantCrous } from "./crous.js";
 import { recupererPointsGeo, ajouterPointGeo, PointGeo } from "./points.js";
 
@@ -25,6 +25,8 @@ let map: any; // Carte Leaflet
 let addPointMode: boolean = false;
 let selectedEmoji: string = "📍";
 let positionActuelMarker: any = null; // Marker de la position utilisateur actuelle
+let reservationLockActif: boolean = false; // Indique si on a déjà récupéré les tables disponibles pour un restaurant (et donc qu'on lock le resto en cours)
+let tablesDisponiblesEnCours: TableDisponible[] = [];
 
 // On fetch la réponse de l'API
 fetch(url)
@@ -157,7 +159,11 @@ function updateMap() {
 
             // Pour les restaurants, on veut afficher un form de réservation
             // de table lorsqu'on clique dessus.
-            marker.on("click", (event: any) => {
+            marker.on("click", async (event: any) => {
+                if (reservationLockActif) {
+                    await (window as any).cacherActions();
+                }
+
                 console.log("Restaurant cliqué :", resto.nom, event);
 
                 afficherPanneau("reservation-form");
@@ -173,6 +179,7 @@ function updateMap() {
                     tablesDiv.innerHTML = "";
                     tablesDiv.classList.add("hidden");
                 }
+                tablesDisponiblesEnCours = [];
             });
         });
     }
@@ -271,13 +278,35 @@ function updateMap() {
 
 (window as any).updateMap = updateMap; // Expose la fonction updateMap pour qu'elle puisse être appelée depuis le HTML
 
-(window as any).cacherActions = function () {
+(window as any).cacherActions = async function () {
+    const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
+
+    if (reservationLockActif && restaurantName?.innerText) {
+        try {
+            await libererTablesRestaurant(restaurantName.innerText);
+        } catch (error: any) {
+            console.log("Erreur lors de la liberation du verrou :", error);
+        }
+    }
+
+    reservationLockActif = false;
+    tablesDisponiblesEnCours = [];
     afficherPanneau("filtres");
 };
 
 (window as any).cacherMenuCrous = function () {
     afficherPanneau("filtres");
 };
+
+// avant de quitter la page on libère le verrou pour pas que on reste bloqué à l'infini
+// si l'utilisateur quitte la page
+window.addEventListener("beforeunload", () => {
+    const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
+
+    if (reservationLockActif && restaurantName?.innerText) {
+        navigator.sendBeacon(`${proxyUrl}/api/restaurants/tables/liberer?nomRestaurant=${encodeURIComponent(restaurantName.innerText)}`);
+    }
+});
 
 /**
  * Gère le clic sur la carte pour ajouter un point
@@ -370,7 +399,7 @@ function handleMapClick(event: any): void {
     });
 };
 
-(window as any).afficherTablesDisponibles = async function () {
+(window as any).afficherTablesDisponibles = async function (utiliserTablesChargees = false) {
     const restaurantName = document.getElementById("restaurant-name") as HTMLSpanElement;
     const tablesDiv = document.getElementById("tables-dispo");
 
@@ -382,13 +411,15 @@ function handleMapClick(event: any): void {
     tablesDiv.classList.remove("hidden");
 
     try {
-        const tables = await recupererTablesRestaurant(nomRestaurant);
+        const tables = utiliserTablesChargees || reservationLockActif ? tablesDisponiblesEnCours : await recupererTablesRestaurant(nomRestaurant);
 
         if (tables.length === 0) {
             tablesDiv.innerHTML = "Aucune table disponible.";
             return;
         }
 
+        reservationLockActif = true;
+        tablesDisponiblesEnCours = tables;
         tablesDiv.innerHTML = tables
             .map(
                 (table) => `
@@ -402,7 +433,12 @@ function handleMapClick(event: any): void {
             )
             .join("");
     } catch (error: any) {
-        tablesDiv.innerHTML = error.message;
+        reservationLockActif = false;
+        tablesDisponiblesEnCours = [];
+        tablesDiv.innerHTML = `
+            <p>${error.message}</p>
+            <button class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 mt-2 cursor-pointer" onclick="afficherTablesDisponibles()">Actualiser</button>
+        `;
     }
 };
 
@@ -435,6 +471,8 @@ function handleMapClick(event: any): void {
     alert(resultat.message);
 
     if (resultat.succes || resultat.success) {
+        reservationLockActif = false;
+        tablesDisponiblesEnCours = [];
         (window as any).cacherActions();
     }
 };
@@ -462,7 +500,7 @@ function handleMapClick(event: any): void {
 
         <button
             class="bg-gray-200 px-3 py-1 rounded border-2 border-gray-400 mt-2 ml-2 cursor-pointer"
-            onclick="afficherTablesDisponibles()"
+            onclick="afficherTablesDisponibles(true)"
         >
             Choisir une autre table
         </button>

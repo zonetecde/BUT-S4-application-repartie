@@ -4,9 +4,14 @@ import java.rmi.RemoteException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class Restaurant implements ServiceRestaurant {
+    // On utilise un set pour stocker les restaurants en cours de réservation, afin d'empêcher deux clients de resa en mm temps
+    // On utilise un ConcurrentHashMap pour éviter les problèmes de concurrence
+    private static Set<String> RESTAURANTS_EN_RESERVATION = ConcurrentHashMap.newKeySet();
 
     Connection conn ;
     /**
@@ -137,6 +142,7 @@ public class Restaurant implements ServiceRestaurant {
                 return new Reponse(false, "Impossible de mettre la table en réservation", null);
             }
             conn.commit();
+            RESTAURANTS_EN_RESERVATION.remove(nomRestaurant);
             return new Reponse(true, "La réservation a été ajoutée", true);
         } catch (SQLException e) {
         try {
@@ -160,6 +166,7 @@ public class Restaurant implements ServiceRestaurant {
      * @return réponse JSON contenant un dictionnaire idTable => nombre de places
      */
     public Reponse recupererTablesRestaurant (String nomRestaurant) throws RemoteException {
+        boolean verrouPris = false;
         //on initalise la connexion
         try {
             //on verifie l'existence du restaurant
@@ -170,17 +177,24 @@ public class Restaurant implements ServiceRestaurant {
                 conn.rollback();
                 return new Reponse(false, "Le restaurant n'existe pas", null);
             }
-            //on verifier la disponibilité des tables
+            //on verifier la disponibilité des tables et que personne d'autre n'est en train de réserver dans ce restaurant
+            if (!RESTAURANTS_EN_RESERVATION.add(nomRestaurant)) {
+                conn.rollback();
+                return new Reponse(false, "Veuillez patienter, une autre personne est déjà en train de réserver dans ce restaurant", null);
+            }
+            verrouPris = true;
             st = conn.prepareStatement(
                     "SELECT t.idTable, t.nbPlaces " +
                             "FROM Table_Resto t " +
                             "JOIN Restaurant r ON t.idRestaurant = r.idRestaurant " +
-                            "WHERE r.nom = ? AND t.reservee = 0"
+                            "WHERE r.nom = ? AND t.reservee = 0 " +
+                            "FOR UPDATE NOWAIT"
             );
             st.setString(1, nomRestaurant);
             rs = st.executeQuery();
             if (!rs.next()) {
                 conn.rollback();
+                RESTAURANTS_EN_RESERVATION.remove(nomRestaurant);
                 return new Reponse(false, "Aucune table disponible", null);
             }
             HashMap<Integer, Integer> tables = new HashMap<>() ;
@@ -192,6 +206,9 @@ public class Restaurant implements ServiceRestaurant {
         }   catch (SQLException e) {
             try {
                 conn.rollback();
+                if (verrouPris) {
+                    RESTAURANTS_EN_RESERVATION.remove(nomRestaurant);
+                }
                 // Si le code d'erreur est 54 c'est que la ligne est verrouillée par une autre transaction, donc qu'une autre personne est en train de réserver
                 if (e.getErrorCode() == 54) {
                     return new Reponse(false, "Veuillez patienter, quelqu'un est déjà en train de réserver une table", null);
@@ -202,6 +219,25 @@ public class Restaurant implements ServiceRestaurant {
                 return new Reponse(false, "Erreur lors du rollback", null);
             }
         }
+    }
+
+    /**
+     * Libère le verrou de reservation d'un restaurant.
+     *
+     * @param nomRestaurant nom du restaurant
+     * @return réponse JSON confirmant la liberation
+     */
+    public Reponse libererTablesRestaurant(String nomRestaurant) throws RemoteException {
+        if (nomRestaurant != null) {
+            RESTAURANTS_EN_RESERVATION.remove(nomRestaurant);
+        }
+        try {
+            // le rollback va libérer les verrous pris lors de la récupération des tables, même si aucune table n'a été réservée à la fin
+            conn.rollback();
+        } catch (SQLException e) {
+            return new Reponse(false, "Erreur lors de la liberation du verrou", null);
+        }
+        return new Reponse(true, "Verrou de reservation libéré", true);
     }
 
     public Reponse recupererReservations() {

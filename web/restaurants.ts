@@ -53,15 +53,22 @@ export async function recupererTablesRestaurant(nomRestaurant: string): Promise<
     }));
 }
 
-export async function reserverTableRestaurant(data: {
-    nomRestaurant: string;
-    idTable: number;
-    dateHeure: string;
-    nom: string;
-    prenom: string;
-    nombreConvives: number;
-    telephone: string;
-}) {
+/**
+ * Enlève le verrou de réservation pour un restaurant
+ *
+ * @param {string} nomRestaurant Le nom du resto
+ */
+export async function libererTablesRestaurant(nomRestaurant: string): Promise<void> {
+    const url = `http://localhost:8081/api/restaurants/tables/liberer?nomRestaurant=${encodeURIComponent(nomRestaurant)}`;
+    const response = await fetch(url, { method: "POST" });
+    const json = await response.json();
+
+    if (!json.success && !json.succes) {
+        throw new Error(json.message);
+    }
+}
+
+export async function reserverTableRestaurant(data: { nomRestaurant: string; idTable: number; dateHeure: string; nom: string; prenom: string; nombreConvives: number; telephone: string }) {
     const params = new URLSearchParams();
 
     params.append("nomRestaurant", data.nomRestaurant);

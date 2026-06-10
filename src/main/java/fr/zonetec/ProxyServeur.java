@@ -148,10 +148,27 @@ public class ProxyServeur {
             }
 
             // Appel la méthode du service RMI et envoie la réponse au client
-            Reponse response = serviceRestaurant.recupererTablesRestaurant(getQueryParams(exchange).get("nomRestaurant"));
+            Map<String, String> params = getQueryParams(exchange);
+            Reponse response = serviceRestaurant.recupererTablesRestaurant(params.get("nomRestaurant"));
             sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
         });
 
+        // Crée l'endpoint pour libérer les tables d'un restaurant
+        server.createContext("/api/restaurants/tables/liberer", exchange -> {
+            if (handleOptions(exchange)) {
+                return;
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
+                sendJson(exchange, 405, new Reponse(false, "Méthode non autorisée", null).toJson());
+                return;
+            }
+
+            Reponse response = serviceRestaurant.libererTablesRestaurant(getQueryParams(exchange).get("nomRestaurant"));
+            sendJson(exchange, response.isSuccess() ? 200 : 400, response.toJson());
+        });
+
+        // Crée l'endpoint pour récupérer les réservations d'un restaurant
         server.createContext("/api/restaurants/reservations", exchange -> {
             if (handleOptions(exchange)) {
                 return;

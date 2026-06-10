@@ -75,6 +75,14 @@
       nbPlaces: Number(nbPlaces)
     }));
   }
+  async function libererTablesRestaurant(nomRestaurant) {
+    const url2 = `http://localhost:8081/api/restaurants/tables/liberer?nomRestaurant=${encodeURIComponent(nomRestaurant)}`;
+    const response = await fetch(url2, { method: "POST" });
+    const json = await response.json();
+    if (!json.success && !json.succes) {
+      throw new Error(json.message);
+    }
+  }
   async function reserverTableRestaurant(data) {
     const params = new URLSearchParams();
     params.append("nomRestaurant", data.nomRestaurant);
@@ -176,6 +184,8 @@
   var addPointMode = false;
   var selectedEmoji = "\u{1F4CD}";
   var positionActuelMarker = null;
+  var reservationLockActif = false;
+  var tablesDisponiblesEnCours = [];
   fetch(url).then((response) => response.json()).then(async (data) => {
     const lon = data.features[0].geometry.coordinates[0];
     const lat = data.features[0].geometry.coordinates[1];
@@ -258,7 +268,10 @@
       restaurants.forEach((resto) => {
         const marker = L.marker([resto.lat, resto.lon], { icon: foodIcon }).addTo(map);
         marker.bindPopup(`<b>${resto.nom}</b><br>Adresse : ${resto.adresse}`);
-        marker.on("click", (event) => {
+        marker.on("click", async (event) => {
+          if (reservationLockActif) {
+            await window.cacherActions();
+          }
           console.log("Restaurant cliqu\xE9 :", resto.nom, event);
           afficherPanneau("reservation-form");
           const restaurantName = document.getElementById("restaurant-name");
@@ -270,6 +283,7 @@
             tablesDiv.innerHTML = "";
             tablesDiv.classList.add("hidden");
           }
+          tablesDisponiblesEnCours = [];
         });
       });
     }
@@ -345,12 +359,28 @@
     }
   }
   window.updateMap = updateMap;
-  window.cacherActions = function() {
+  window.cacherActions = async function() {
+    const restaurantName = document.getElementById("restaurant-name");
+    if (reservationLockActif && restaurantName?.innerText) {
+      try {
+        await libererTablesRestaurant(restaurantName.innerText);
+      } catch (error) {
+        console.log("Erreur lors de la liberation du verrou :", error);
+      }
+    }
+    reservationLockActif = false;
+    tablesDisponiblesEnCours = [];
     afficherPanneau("filtres");
   };
   window.cacherMenuCrous = function() {
     afficherPanneau("filtres");
   };
+  window.addEventListener("beforeunload", () => {
+    const restaurantName = document.getElementById("restaurant-name");
+    if (reservationLockActif && restaurantName?.innerText) {
+      navigator.sendBeacon(`${proxyUrl}/api/restaurants/tables/liberer?nomRestaurant=${encodeURIComponent(restaurantName.innerText)}`);
+    }
+  });
   function handleMapClick(event) {
     const lat = event.latlng.lat;
     const lon = event.latlng.lng;
@@ -409,7 +439,7 @@
       }
     });
   };
-  window.afficherTablesDisponibles = async function() {
+  window.afficherTablesDisponibles = async function(utiliserTablesChargees = false) {
     const restaurantName = document.getElementById("restaurant-name");
     const tablesDiv = document.getElementById("tables-dispo");
     if (!restaurantName || !tablesDiv) return;
@@ -417,11 +447,13 @@
     tablesDiv.innerHTML = "Chargement des tables disponibles...";
     tablesDiv.classList.remove("hidden");
     try {
-      const tables = await recupererTablesRestaurant(nomRestaurant);
+      const tables = utiliserTablesChargees || reservationLockActif ? tablesDisponiblesEnCours : await recupererTablesRestaurant(nomRestaurant);
       if (tables.length === 0) {
         tablesDiv.innerHTML = "Aucune table disponible.";
         return;
       }
+      reservationLockActif = true;
+      tablesDisponiblesEnCours = tables;
       tablesDiv.innerHTML = tables.map(
         (table) => `
         <button
@@ -433,7 +465,12 @@
     `
       ).join("");
     } catch (error) {
-      tablesDiv.innerHTML = error.message;
+      reservationLockActif = false;
+      tablesDisponiblesEnCours = [];
+      tablesDiv.innerHTML = `
+            <p>${error.message}</p>
+            <button class="bg-blue-200 px-3 py-1 rounded border-2 border-blue-400 mt-2 cursor-pointer" onclick="afficherTablesDisponibles()">Actualiser</button>
+        `;
     }
   };
   window.validerReservation = async function(idTable) {
@@ -459,6 +496,8 @@
     });
     alert(resultat.message);
     if (resultat.succes || resultat.success) {
+      reservationLockActif = false;
+      tablesDisponiblesEnCours = [];
       window.cacherActions();
     }
   };
@@ -483,7 +522,7 @@
 
         <button
             class="bg-gray-200 px-3 py-1 rounded border-2 border-gray-400 mt-2 ml-2 cursor-pointer"
-            onclick="afficherTablesDisponibles()"
+            onclick="afficherTablesDisponibles(true)"
         >
             Choisir une autre table
         </button>
