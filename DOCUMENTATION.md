@@ -1,26 +1,10 @@
-# Documentation des services — Application Répartie BUT S4
+# Documentation des services - Application Répartie BUT S4
 
 ---
 
 ## Schéma global de communication
 
 ![Schéma global de communication](web/static/schema-global.png)
-
-### Flux de données
-
-| Donnée              | Chemin                                                                                                    |
-| ------------------- | --------------------------------------------------------------------------------------------------------- |
-| **Stations Vélib'** | Navigateur → appel direct → API Cyclocity                                                                 |
-| **Incidents Waze**  | Navigateur → Proxy HTTP → Service Fetch → Proxy IUT → API Waze                                            |
-| **Restaurants**     | Navigateur → Proxy HTTP → Service Restaurant → Oracle DB                                                  |
-| **Réservation**     | Navigateur → Proxy HTTP → Service Restaurant → Oracle DB (verrous `FOR UPDATE NOWAIT`)                    |
-| **Restos CROUS**    | Navigateur → Proxy HTTP → Service CROUS → Proxy IUT → API Croustillant.menu                               |
-| **Menus CROUS**     | Navigateur → Proxy HTTP → Service CROUS → Proxy IUT → API Croustillant.menu                               |
-| **Points perso**    | Navigateur → Proxy HTTP → Service PointGeo → Oracle DB                                                    |
-| **Documentation**   | Navigateur → Proxy HTTP → Service Documentation → Proxy HTTP (interne) → Service X.chargerDocumentation() |
-| **Géocodage Nancy** | Navigateur → appel direct → API data.geopf.fr                                                             |
-
----
 
 ## Documentation par service
 
@@ -150,13 +134,13 @@ Le schéma de la base Oracle est documenté dans [`docs/diagramme_BD.puml.txt`](
 
 **Tables :**
 
--   `Restaurant` — restaurants avec nom, adresse, coordonnées GPS
--   `Table_Resto` — tables de chaque restaurant avec nombre de places et statut réservé
--   `Reservation` — réservations avec date, client, nombre de convives
--   `Commande` — commandes passées sur une table
--   `Plat` — plats disponibles avec prix et stock
--   `Contient` — association commande/plat avec quantité
--   `Point_Geo` — points personnalisés ajoutés par les utilisateurs
+-   `Restaurant` - restaurants avec nom, adresse, coordonnées GPS
+-   `Table_Resto` - tables de chaque restaurant avec nombre de places et statut réservé
+-   `Reservation` - réservations avec date, client, nombre de convives
+-   `Commande` - commandes passées sur une table
+-   `Plat` - plats disponibles avec prix et stock
+-   `Contient` - association commande/plat avec quantité
+-   `Point_Geo` - points personnalisés ajoutés par les utilisateurs
 
 ---
 
