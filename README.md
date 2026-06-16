@@ -10,6 +10,11 @@ Ce projet est une **application répartie** composée de plusieurs services Java
 
 ---
 
+## Documentation technique
+
+La documentation est disponible sur le site internet, et en markdown ici :
+[DOCUMENTATION.md](DOCUMENTATION.md)
+
 ## Services proposés
 
 | Service           | Nom RMI         | Rôle                                                                                                                                                      |

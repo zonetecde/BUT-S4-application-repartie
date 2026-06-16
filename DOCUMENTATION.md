@@ -1,0 +1,165 @@
+# Documentation des services — Application Répartie BUT S4
+
+---
+
+## Schéma global de communication
+
+![Schéma global de communication](web/static/schema-global.png)
+
+### Flux de données
+
+| Donnée              | Chemin                                                                                                    |
+| ------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Stations Vélib'** | Navigateur → appel direct → API Cyclocity                                                                 |
+| **Incidents Waze**  | Navigateur → Proxy HTTP → Service Fetch → Proxy IUT → API Waze                                            |
+| **Restaurants**     | Navigateur → Proxy HTTP → Service Restaurant → Oracle DB                                                  |
+| **Réservation**     | Navigateur → Proxy HTTP → Service Restaurant → Oracle DB (verrous `FOR UPDATE NOWAIT`)                    |
+| **Restos CROUS**    | Navigateur → Proxy HTTP → Service CROUS → Proxy IUT → API Croustillant.menu                               |
+| **Menus CROUS**     | Navigateur → Proxy HTTP → Service CROUS → Proxy IUT → API Croustillant.menu                               |
+| **Points perso**    | Navigateur → Proxy HTTP → Service PointGeo → Oracle DB                                                    |
+| **Documentation**   | Navigateur → Proxy HTTP → Service Documentation → Proxy HTTP (interne) → Service X.chargerDocumentation() |
+| **Géocodage Nancy** | Navigateur → appel direct → API data.geopf.fr                                                             |
+
+---
+
+## Documentation par service
+
+### Service Documentation
+
+Le service Documentation est le **point d'entrée centralisé** pour consulter la documentation de tous les autres services de l'application. Il joue le rôle d'intermédiaire entre le navigateur et les services RMI.
+
+Quand l'utilisateur clique sur un bouton dans le panneau de documentation, le navigateur appelle le proxy HTTP sur `/api/documentation/{service}`. Le proxy transmet alors la demande au service Documentation via RMI avec le nom du service demandé.
+
+Le service Documentation reçoit ce nom et fait à son tour une requête HTTP vers le proxy sur l'endpoint interne `/api/services/documentation/{service}`. Cet endpoint appelle directement la méthode `chargerDocumentation()` du service RMI concerné (Restaurant, CROUS, Fetch ou PointGeo), qui retourne sa propre documentation HTML.
+
+Pour sa propre documentation, le service ne fait pas d'appel HTTP : il retourne directement ce texte, évitant ainsi une boucle infinie.
+
+**Endpoints exposés par le proxy :**
+
+| Endpoint                           | Méthode | Service RMI appelé                                           |
+| ---------------------------------- | ------- | ------------------------------------------------------------ |
+| `/api/documentation/restaurant`    | GET     | `serviceDocumentation.chargerDocumentation("restaurant")`    |
+| `/api/documentation/crous`         | GET     | `serviceDocumentation.chargerDocumentation("crous")`         |
+| `/api/documentation/fetch`         | GET     | `serviceDocumentation.chargerDocumentation("fetch")`         |
+| `/api/documentation/pointgeo`      | GET     | `serviceDocumentation.chargerDocumentation("pointgeo")`      |
+| `/api/documentation/documentation` | GET     | `serviceDocumentation.chargerDocumentation("documentation")` |
+
+---
+
+### Service Restaurant
+
+Le service Restaurant gère les restaurants, les tables disponibles et les réservations. Le site commence par demander la liste des restaurants avec leurs coordonnées pour les afficher sur la carte.
+
+Quand l'utilisateur veut réserver, il choisit d'abord une date et une heure. Le service cherche alors les tables du restaurant qui ne sont pas déjà prises sur ce créneau. Une réservation dure une heure, donc une table réservée à midi est considérée occupée jusqu'à 13h.
+
+Pour éviter que deux personnes réservent en même temps le même restaurant au même horaire, le service prend un verrou sur le couple restaurant + date/heure. Il verrouille aussi les lignes SQL des tables disponibles avec `FOR UPDATE NOWAIT`. Si une autre personne est déjà en train de réserver ce même créneau, le service renvoie un message demandant de patienter.
+
+Quand l'utilisateur valide la réservation, le service vérifie une dernière fois que la table existe, que le nombre de convives est correct, et qu'aucune réservation ne chevauche ce créneau. Ensuite il insère la réservation en base et libère le verrou.
+
+![Schéma du service Restaurant](web/static/schema-service-restaurant.png)
+
+![Schéma du service Restaurant 2](web/static/schema-service-restaurant-2.png)
+
+**Endpoints exposés par le proxy :**
+
+| Endpoint                                            | Méthode | Service RMI appelé                       |
+| --------------------------------------------------- | ------- | ---------------------------------------- |
+| `/api/restaurants/coordonnees`                      | GET     | `recupererCoordonneesRestaurantsNancy()` |
+| `/api/restaurants/tables?nomRestaurant=&dateHeure=` | GET     | `recupererTablesRestaurant()`            |
+| `/api/restaurants/reserver`                         | POST    | `reserverTable()`                        |
+| `/api/restaurants/tables/liberer`                   | POST    | `libererTablesRestaurant()`              |
+| `/api/restaurants/reservations`                     | GET     | `recupererReservations()`                |
+
+---
+
+### Service CROUS
+
+Le service CROUS sert à afficher les restaurants universitaires et leurs menus. Le site demande d'abord les restaurants pour une ville, par exemple Nancy. Le service interroge l'API CROUS, cherche la région qui correspond à cette ville, puis récupère les restaurants de cette région.
+
+Quand l'utilisateur clique sur un restaurant CROUS, le proxy demande ensuite au service de charger le menu. La réponse de l'API contient beaucoup d'objets imbriqués. Le service transforme donc ces données en un texte simple, avec la date et les plats classés par repas et par catégorie.
+
+Le service CROUS est donc un **traducteur** entre l'API externe et notre application. Il cache les détails compliqués de l'API et renvoie des données plus faciles à afficher dans le navigateur.
+
+![Schéma du service CROUS](web/static/schema-service-crous.png)
+
+**API externe utilisée :** `https://api.croustillant.menu/v1/`
+
+**Endpoints exposés par le proxy :**
+
+| Endpoint                             | Méthode | Service RMI appelé       |
+| ------------------------------------ | ------- | ------------------------ |
+| `/api/crous/restaurants?ville=Nancy` | GET     | `recupererRestaurants()` |
+| `/api/crous/menu?idRestaurant=`      | GET     | `chargerMenu()`          |
+
+---
+
+### Service Fetch
+
+Le service Fetch sert à récupérer le contenu d'une URL pour les autres parties de l'application. Le navigateur ne va pas toujours appeler directement les API externes. Il passe par le proxy HTTP, puis le proxy demande au service Fetch de faire la requête. Le service Fetch utilise lui-même le proxy de l'IUT (`www-cache:3128`) pour faire la requête, ce qui lui permet d'accéder à des ressources externes que le navigateur ne peut pas atteindre directement à cause des règles de sécurité CORS.
+
+Concrètement, le proxy envoie une URL au service Fetch. Le service vérifie l'URL, fait la requête avec la méthode HTTP partagée du projet (`HttpClientUtils.fetchUrl()`), récupère le texte de la réponse, puis le renvoie dans un objet `Reponse`. Si l'URL est mauvaise, si le réseau ne répond pas, ou si la requête est interrompue, le service renvoie une erreur simple au lieu de faire planter tout le programme.
+
+Ce service est utile car il **centralise les appels externes**. Les autres services n'ont pas besoin de connaître les détails du client HTTP ou du proxy de l'IUT.
+
+![Schéma du service Fetch](web/static/schema-service-fetch.png)
+
+**Utilisé pour :** récupérer les incidents Waze (`https://carto.g-ny.eu/data/cifs/cifs_waze_v2.json`)
+
+**Endpoints exposés par le proxy :**
+
+| Endpoint          | Méthode | Service RMI appelé |
+| ----------------- | ------- | ------------------ |
+| `/api/fetch?url=` | GET     | `fetch()`          |
+
+---
+
+### Service PointGeo
+
+Le service PointGeo sert à gérer les points ajoutés par les utilisateurs sur la carte. Un point contient des coordonnées, un emoji, un titre et une description. Ces informations sont stockées dans la base de données pour pouvoir les retrouver plus tard.
+
+Quand le site charge la carte, le proxy appelle le service PointGeo pour récupérer tous les points. Le service lit la table `Point_Geo`, transforme chaque ligne en objet `Point`, puis renvoie la liste au navigateur.
+
+Quand un utilisateur ajoute un point, le site envoie les coordonnées et le texte au proxy. Le proxy appelle ensuite le service PointGeo. Le service insère le point en base, récupère l'identifiant créé, puis renvoie le nouveau point pour que la carte puisse l'afficher directement.
+
+![Schéma du service PointGeo](web/static/schema-service-pointgeo.png)
+
+**Endpoints exposés par le proxy :**
+
+| Endpoint           | Méthode | Service RMI appelé         |
+| ------------------ | ------- | -------------------------- |
+| `/api/points/list` | GET     | `recupererTousLesPoints()` |
+| `/api/points/add`  | POST    | `ajouterPoint()`           |
+
+---
+
+## Résumé des APIs et protocoles
+
+| Protocole                                 | Utilisation                                                                                                                                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RMI** (Java RMI Registry)               | Communication entre le Proxy HTTP et les 5 services (Restaurant, CROUS, Fetch, PointGeo, Documentation). Chaque service sur son propre port 1099. |
+| **HTTP REST** (JSON)                      | Communication entre le navigateur et le Proxy HTTP. Le proxy traduit les requêtes REST en appels RMI.                                             |
+| **HTTP direct**                           | Le navigateur appelle directement l'API Cyclocity (Vélib') et l'API data.geopf.fr (géocodage).                                                    |
+| **HTTP via proxy IUT** (`www-cache:3128`) | Les services CROUS et Fetch passent par le proxy IUT pour atteindre les APIs externes (Croustillant.menu, Waze).                                  |
+| **JDBC**                                  | Les services Restaurant et PointGeo se connectent à la base Oracle via JDBC.                                                                      |
+
+---
+
+## Base de données
+
+Le schéma de la base Oracle est documenté dans [`docs/diagramme_BD.puml.txt`](docs/diagramme_BD.puml.txt).
+
+**Tables :**
+
+-   `Restaurant` — restaurants avec nom, adresse, coordonnées GPS
+-   `Table_Resto` — tables de chaque restaurant avec nombre de places et statut réservé
+-   `Reservation` — réservations avec date, client, nombre de convives
+-   `Commande` — commandes passées sur une table
+-   `Plat` — plats disponibles avec prix et stock
+-   `Contient` — association commande/plat avec quantité
+-   `Point_Geo` — points personnalisés ajoutés par les utilisateurs
+
+---
+
+## Lancement des services
+
+Voir [`docs/deploiement.md`](docs/deploiement.md) pour le guide complet de déploiement Java, et [`docs/deploiement_web.md`](docs/deploiement_web.md) pour le frontend TypeScript.
