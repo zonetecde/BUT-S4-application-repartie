@@ -18,18 +18,6 @@ Le service Documentation reçoit ce nom et fait à son tour une requête HTTP ve
 
 Pour sa propre documentation, le service ne fait pas d'appel HTTP : il retourne directement ce texte, évitant ainsi une boucle infinie.
 
-**Endpoints exposés par le proxy :**
-
-| Endpoint                           | Méthode | Service RMI appelé                                           |
-| ---------------------------------- | ------- | ------------------------------------------------------------ |
-| `/api/documentation/restaurant`    | GET     | `serviceDocumentation.chargerDocumentation("restaurant")`    |
-| `/api/documentation/crous`         | GET     | `serviceDocumentation.chargerDocumentation("crous")`         |
-| `/api/documentation/fetch`         | GET     | `serviceDocumentation.chargerDocumentation("fetch")`         |
-| `/api/documentation/pointgeo`      | GET     | `serviceDocumentation.chargerDocumentation("pointgeo")`      |
-| `/api/documentation/documentation` | GET     | `serviceDocumentation.chargerDocumentation("documentation")` |
-
----
-
 ### Service Restaurant
 
 Le service Restaurant gère les restaurants, les tables disponibles et les réservations. Le site commence par demander la liste des restaurants avec leurs coordonnées pour les afficher sur la carte.
@@ -43,16 +31,6 @@ Quand l'utilisateur valide la réservation, le service vérifie une dernière fo
 ![Schéma du service Restaurant](web/static/schema-service-restaurant.png)
 
 ![Schéma du service Restaurant 2](web/static/schema-service-restaurant-2.png)
-
-**Endpoints exposés par le proxy :**
-
-| Endpoint                                            | Méthode | Service RMI appelé                       |
-| --------------------------------------------------- | ------- | ---------------------------------------- |
-| `/api/restaurants/coordonnees`                      | GET     | `recupererCoordonneesRestaurantsNancy()` |
-| `/api/restaurants/tables?nomRestaurant=&dateHeure=` | GET     | `recupererTablesRestaurant()`            |
-| `/api/restaurants/reserver`                         | POST    | `reserverTable()`                        |
-| `/api/restaurants/tables/liberer`                   | POST    | `libererTablesRestaurant()`              |
-| `/api/restaurants/reservations`                     | GET     | `recupererReservations()`                |
 
 ---
 
@@ -68,13 +46,6 @@ Le service CROUS est donc un **traducteur** entre l'API externe et notre applica
 
 **API externe utilisée :** `https://api.croustillant.menu/v1/`
 
-**Endpoints exposés par le proxy :**
-
-| Endpoint                             | Méthode | Service RMI appelé       |
-| ------------------------------------ | ------- | ------------------------ |
-| `/api/crous/restaurants?ville=Nancy` | GET     | `recupererRestaurants()` |
-| `/api/crous/menu?idRestaurant=`      | GET     | `chargerMenu()`          |
-
 ---
 
 ### Service Fetch
@@ -88,12 +59,6 @@ Ce service est utile car il **centralise les appels externes**. Les autres servi
 ![Schéma du service Fetch](web/static/schema-service-fetch.png)
 
 **Utilisé pour :** récupérer les incidents Waze (`https://carto.g-ny.eu/data/cifs/cifs_waze_v2.json`)
-
-**Endpoints exposés par le proxy :**
-
-| Endpoint          | Méthode | Service RMI appelé |
-| ----------------- | ------- | ------------------ |
-| `/api/fetch?url=` | GET     | `fetch()`          |
 
 ---
 
@@ -113,34 +78,6 @@ Quand un utilisateur ajoute un point, le site envoie les coordonnées et le text
 | ------------------ | ------- | -------------------------- |
 | `/api/points/list` | GET     | `recupererTousLesPoints()` |
 | `/api/points/add`  | POST    | `ajouterPoint()`           |
-
----
-
-## Résumé des APIs et protocoles
-
-| Protocole                                 | Utilisation                                                                                                                                       |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RMI** (Java RMI Registry)               | Communication entre le Proxy HTTP et les 5 services (Restaurant, CROUS, Fetch, PointGeo, Documentation). Chaque service sur son propre port 1099. |
-| **HTTP REST** (JSON)                      | Communication entre le navigateur et le Proxy HTTP. Le proxy traduit les requêtes REST en appels RMI.                                             |
-| **HTTP direct**                           | Le navigateur appelle directement l'API Cyclocity (Vélib') et l'API data.geopf.fr (géocodage).                                                    |
-| **HTTP via proxy IUT** (`www-cache:3128`) | Les services CROUS et Fetch passent par le proxy IUT pour atteindre les APIs externes (Croustillant.menu, Waze).                                  |
-| **JDBC**                                  | Les services Restaurant et PointGeo se connectent à la base Oracle via JDBC.                                                                      |
-
----
-
-## Base de données
-
-Le schéma de la base Oracle est documenté dans [`docs/diagramme_BD.puml.txt`](docs/diagramme_BD.puml.txt).
-
-**Tables :**
-
--   `Restaurant` - restaurants avec nom, adresse, coordonnées GPS
--   `Table_Resto` - tables de chaque restaurant avec nombre de places et statut réservé
--   `Reservation` - réservations avec date, client, nombre de convives
--   `Commande` - commandes passées sur une table
--   `Plat` - plats disponibles avec prix et stock
--   `Contient` - association commande/plat avec quantité
--   `Point_Geo` - points personnalisés ajoutés par les utilisateurs
 
 ---
 
